@@ -1,0 +1,47 @@
+@font-face {
+  font-family: 'Bebas-Neue';
+    src:  url('font/Bebas-Neue.ttf.woff') format('woff'),
+    url('font/Bebas-Neue.ttf.svg#Bebas-Neue') format('svg'),
+    url('font/Bebas-Neue.ttf.eot'),
+    url('font/Bebas-Neue.eot?#iefix') format('embedded-opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.text {
+    font-family: 'Bebas-Neue';
+}
+
+.body {
+    font-family: 'Bebas-Neue';
+}
+
+.axisL path { stroke-width: 0px; }
+.axisL line { stroke-width: 0px; }
+.axisL text { 
+    font-family: 'Bebas-Neue';
+    font-size:   24px; 
+    font-weight: normal;
+}
+
+.axisB path { stroke-width: 0px; }
+.axisB line { stroke-width: 0px; }
+.axisB text { 
+    font-family: 'Bebas-Neue';
+    font-size:   24px; 
+    font-weight: normal;
+}
+
+.Holder_Section {
+    position: relative;
+}
+
+
+.Front_Stuff { 
+    position: absolute;
+}
+
+.Back_Stuff { 
+    position: absolute;
+ }
+
