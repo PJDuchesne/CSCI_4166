@@ -25,147 +25,54 @@
     <body style="width: 800px; font-family: Bebas-Neue">
         <div class="Holder_Section" style="height: 450px;">
             <div class="Back_Stuff">
-                <div style="position: absolute; left: 35px; top: 40px;">
-                    <img src = "images/image1.jpg" alt = "XBox">
-                </div>
-                <div style="position: absolute; left: 135px; top: 165px;">
-                    <img src = "images/image2.jpg" alt = "Gameboy_1">
-                </div>
-                <div style="position: absolute; left: 650px; top: 115px;">
-                    <img src = "images/image3.jpg" alt = "Tablet_Phone">
-                </div>
+                <img style="position: absolute; left: 35px;  top: 40px;"  src = "images/image1.jpg" alt = "XBox">
+                <img style="position: absolute; left: 135px; top: 165px;" src = "images/image2.jpg" alt = "Gameboy_1">
+                <img style="position: absolute; left: 650px; top: 115px;" src = "images/image3.jpg" alt = "Tablet_Phone">
             </div>
             <div class="Front_Stuff">
-                <div style="position: absolute; top: 90px; width: 800px; font-size:45px; text-align: center;">
-                    <span>VIDEO GAMES: AN INDUSTRY IN TRANSITION</span>
-                </div>
+                <span style="position: absolute; top: 90px; width: 800px; font-size:45px; text-align: center;">VIDEO GAMES: AN INDUSTRY IN TRANSITION</span>
                 <div class = "line_star_line" style="position: absolute; width: 400px; height: 25px; left: 190px; top: 130px;">
-                    <script type = "text/javascript">
-                        var w = 400;
-                        var h = 26;
-                        var svg = d3.select("div.line_star_line").append("svg")
-                            .attr("width", w)
-                            .attr("height", h);
-
-                        var lineL = [ { "x": 0, "y": h/2 }, { "x": w/2-15, "y": h/2} ];
-
-                        var star =  [ { "x": 195, "y": 10 }, { "x": 198, "y": 11},
-                                      { "x": 200, "y": 8  }, { "x": 202, "y": 11},
-                                      { "x": 205, "y": 10 }, { "x": 203, "y": 14},
-                                      { "x": 204, "y": 17 }, { "x": 200, "y": 15},
-                                      { "x": 196, "y": 17 }, { "x": 197, "y": 14} ];
-
-                        var lineR = [ { "x": w/2+15, "y": h/2 }, { "x": w, "y": h/2} ];
-
-                        var linefunction = d3.line()
-                                                 .x(function(d) { return d.x; })
-                                                 .y(function(d) { return d.y; });
-
-                        svg.append("path")
-                            .attr("d", linefunction(lineL))
-                            .attr("stroke", "black")
-                            .attr("stroke-width", 2)
-                            .attr("fill", "none");
-
-                        svg.append("path")
-                            .attr("d", linefunction(star))
-                            .attr("stroke", "red")
-                            .attr("stroke-width", 0)
-                            .attr("fill", "red");
-
-                        svg.append("path")
-                            .attr("d", linefunction(lineR))
-                            .attr("stroke", "black")
-                            .attr("stroke-width", 2)
-                            .attr("fill", "none");
-
-                    </script>
+                    <script src="lsl.js"></script>
                 </div>
-                <div style="position: absolute; top: 240px; left: 50px; width: 800px; font-size: 36px; text-align: left;">
-                    <span><span style="color: red">PHYSICAL RETAIL SALES</span> OF COMPUTER AND VIDEO GAMES ARE</span>
-                </div>
-                <div style="position: absolute; top: 275px; left: 50px; width: 800px; font-size: 36px; text-align: left;">
-                    <span>CURRENTLY ON THEIR <span style="color: red">LOWEST LEVEL</span> SINCE 2006.</span>
-                </div>
-                <div style="position: absolute; top: 375px; left: 50px; width: 800px; font-size: 36px; text-align: left;">
-                    <span>U.S. COMPUTER AND VIDEO GAME SALES (PHYSICAL RETAIL)</span>
-                </div>
-                <div style="position: absolute; top: 410px; left: 50px; width: 800px; font-size: 28px; text-align: left;">
-                    <span>in billion US dollars</span>
-                </div>
+                <span style="position: absolute; top: 240px; left: 50px; width: 800px;"><span style="color: red">PHYSICAL RETAIL SALES</span> OF COMPUTER AND VIDEO GAMES ARE</span>
+                <span style="position: absolute; top: 275px; left: 50px; width: 800px;">CURRENTLY ON THEIR <span style="color: red">LOWEST LEVEL</span> SINCE 2006.</span>
+                <span style="position: absolute; top: 375px; left: 50px; width: 800px;">U.S. COMPUTER AND VIDEO GAME SALES (PHYSICAL RETAIL)</span>
+                <span style="position: absolute; top: 410px; left: 50px; width: 800px; font-size: 28px;">in billion US dollars</span>
             </div>
         </div>
         <div class="Holder_Section">
             <div class="Front_Stuff">
-                <div style="position: absolute; left: 650px; top: 0px;">
-                    <img src = "images/image4.jpg" alt = "Disks">
-                </div>
+                <img style="position: absolute; left: 650px; top: 0px;" src = "images/image4.jpg" alt = "Disks">
             </div>
             <div class="Back_Stuff">
                 <script src="first_graph.js"></script>
             </div>
         </div>
         <div class="Holder_Section" style="height: 250px">
-            <div style="position: absolute; top: 50px; left: 50px; font-size: 36px; text-align: left;">
-                <span><span style="color: red">PHYSICAL SALES </span>STILL MAKE UP <span style="color:red">THE LION'S SHARE</span> OF GAMING</span>
-            </div>
-            <div style="position: absolute; top: 85px; left: 50px; font-size: 36px; text-align: left;">
-                <span>SOFTWARE REVENUE, BUT <span style="color: red">DIGITAL DELIVERY</span> IS BECOMING</span>
-            </div>
-            <div style="position: absolute; top: 120px; left: 50px; font-size: 36px; text-align: left;">
-                <span style="color: red">INCREASINGLY IMPORTANT.</span>
-            </div>
-            <div style="position: absolute; top: 200px; left: 50px; font-size: 36px; text-align: left;">
-                <span>DIGITAL VS. PHYSICAL SALES</span>
-            </div>
-            <div style="position: absolute; top: 230px; left: 50px; font-size: 24px; text-align: left;">
-                <span>in %</span>
-            </div>
-            <div style="position: absolute; top: 222px; left: 372px; font-size: 24px; text-align: left; white-space: pre">
-                <span>Physical Format                Digital Format*</span>
-            </div>
+            <span style="position: absolute; top: 50px; left: 50px;"><span style="color: red">PHYSICAL SALES </span>STILL MAKE UP <span style="color:red">THE LION'S SHARE</span> OF GAMING</span>
+            <span style="position: absolute; top: 85px; left: 50px;">SOFTWARE REVENUE, BUT <span style="color: red">DIGITAL DELIVERY</span> IS BECOMING</span>
+            <span style="position: absolute; top: 120px; left: 50px; color: red">INCREASINGLY IMPORTANT.</span>
+            <span style="position: absolute; top: 200px; left: 50px;">DIGITAL VS. PHYSICAL SALES</span>
+            <span style="position: absolute; top: 230px; left: 50px; font-size: 24px;">in %</span>
+            <span style="position: absolute; top: 252px; left: 432px; font-size: 24px; white-space: pre">Physical Format                Digital Format*</span>
         </div>
-        <script src = "sideways.js"></script>>
+        <script src = "sideways.js"></script>
         <div class="Holder_Section" style="height: 300px">
-            <div style="position: absolute; top: 5px; left: 50px; font-size: 24px; text-align: left;">
-                <span>* includes subscriptions, digital full games, add-on content, mobile apps and social net</span>
-            </div>
-            <div style="position: absolute; top: 25px; left: 50px; font-size: 24px; text-align: left;">
-                <span>work gaming</span>
-            </div>
-            <div style="position: absolute; top: 85px; left: 50px; font-size: 36px; text-align: left;">
-                <span>FOR NOW, <span style="color: red">CONESOLES REMAIN THE MOST POPULAR </span>GAMING</span>
-            </div>
-            <div style="position: absolute; top: 120px; left: 50px; font-size: 36px; text-align: left;">
-                <span>DEVICES IN THE U.S.</span>
-            </div>
-            <div style="position: absolute; top: 210px; left: 50px; font-size: 36px; text-align: left;">
-                <span>U.S. HOUSEHOLDS THAT OWN AT LEAST ONE OF THE FOLLOWING</span>
-            </div>
-            <div style="position: absolute; top: 245px; left: 50px; font-size: 36px; text-align: left;">
-                <span>DEVICES PLAY ON THEIR...</span>
-            </div>
-            <div style="position: absolute; top: 275px; left: 50px; font-size: 24px; text-align: left;">
-                <span>in %</span>
-            </div>
+            <span style="position: absolute; top: 5px; left: 50px; font-size: 24px; text-align: left;">* includes subscriptions, digital full games, add-on content, mobile apps and social net</span>
+            <span style="position: absolute; top: 25px; left: 50px; font-size: 24px; text-align: left;"> work gaming</span>
+            <span style="position: absolute; top: 85px; left: 50px; ">FOR NOW, <span style="color: red">CONESOLES REMAIN THE MOST POPULAR </span>GAMING</span>
+            <span style="position: absolute; top: 120px; left: 50px;">DEVICES IN THE U.S.</span>
+            <span style="position: absolute; top: 210px; left: 50px;">U.S. HOUSEHOLDS THAT OWN AT LEAST ONE OF THE FOLLOWING</span>
+            <span style="position: absolute; top: 245px; left: 50px;">DEVICES PLAY ON THEIR...</span>
+            <span style="position: absolute; top: 275px; left: 50px; font-size: 24px; text-align: left;">in %</span>
         </div>
         <div class="Holder_Section" style="height: 200px">
             <div class="Front_Stuff" style="height: 200px">
-                <div style="position: absolute; left: 76px;  top: 63px">
-                    <img src = "images/image5.jpg" alt = "Wii">
-                </div>
-                <div style="position: absolute; left: 232px; top: 55px;">
-                    <img src = "images/image6.jpg" alt = "Laptop">
-                </div>
-                <div style="position: absolute; left: 395px; top: 55px;">
-                    <img src = "images/image7.jpg" alt = "Cellphone">
-                </div>
-                <div style="position: absolute; left: 530px; top: 70px;">
-                    <img src = "images/image8.jpg" alt = "Gameboy_2">
-                </div>
-                <div style="position: absolute; left: 663px; top: 45px;">
-                    <img src = "images/image9.jpg" alt = "Tablet">
-                </div>
+                <img style="position: absolute; left: 76px;  top: 63px" src = "images/image5.jpg" alt = "Wii">
+                <img style="position: absolute; left: 232px; top: 55px;" src = "images/image6.jpg" alt = "Laptop">
+                <img style="position: absolute; left: 395px; top: 55px;" src = "images/image7.jpg" alt = "Cellphone">
+                <img style="position: absolute; left: 530px; top: 70px;" src = "images/image8.jpg" alt = "Gameboy_2">
+                <img style="position: absolute; left: 663px; top: 45px;" src = "images/image9.jpg" alt = "Tablet">
             </div>
             <div class="Semi_Circles">
                 <script src="semi_circles.js"></script>

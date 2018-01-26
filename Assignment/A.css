@@ -12,8 +12,10 @@
     font-family: 'Bebas-Neue';
 }
 
-.body {
+body {
     font-family: 'Bebas-Neue';
+    font-size: 36px;
+    text-align: left;
 }
 
 .axisL path { stroke-width: 0px; }
