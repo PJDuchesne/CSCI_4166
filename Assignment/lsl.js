@@ -1,7 +1,10 @@
 var w = 400;
 var h = 26;
 
-var svg = d3.select("div.line_star_line").append("svg")
+// This flag is silly in the context of how javascript creates and stored variables
+// This logic is required for modularly usingly this piece of code so that the second time
+    // the correct div is selected
+var svg = d3.select("#line_star_line" + ((typeof silly_js_flag == 'undefined') ? "1" : "2")).append("svg")
     .attr("width", w)
     .attr("height", h);
 
@@ -29,7 +32,9 @@ svg.append("path")
     .attr("d", linefunction(star))
     .attr("stroke", "red")
     .attr("stroke-width", 0)
-    .attr("fill", "red");
+    .attr("fill", "red")
+    .on("mouseover", function(d) { d3.select(this).attr("fill", "black"); })
+    .on("mouseout", function(d) { d3.select(this).attr("fill", "red"); });
 
 svg.append("path")
     .attr("d", linefunction(lineR))
@@ -37,3 +42,4 @@ svg.append("path")
     .attr("stroke-width", 2)
     .attr("fill", "none");
 
+var silly_js_flag = 1;
