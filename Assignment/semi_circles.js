@@ -13,17 +13,42 @@ var dataset = [70, 65, 38, 35, 26];
 
 tau = 2*Math.PI;
 
-var myArc = d3.arc()
+var myArc_sc = d3.arc()
     .innerRadius(52)
     .outerRadius(70)
-    .endAngle(-0.5*tau);
+    .startAngle(0.5*tau);
+
+function arcTween(d) {
+
+    var old_value;      // Stores value to return to
+    d3.select(this)
+        .transition()
+            .attrTween("d", function (d) {
+                old_value = d.endAngle;
+                var i = d3.interpolate(d.endAngle, 0.5*tau);
+                return function (t) {
+                    d.endAngle =  i(t);
+                    return myArc_sc(d);
+                };
+            })
+        .transition().delay(1000)
+            .attrTween("d", function (d) {
+                var i = d3.interpolate(d.endAngle, old_value);
+                return function (t) {
+                    d.endAngle =  i(t);
+                    return myArc_sc(d);
+                };
+            })
+}
 
 svg.selectAll("path.myArc").data(dataset).enter()
   .append("path")
+    .datum( function(d) { return {endAngle: (d/100+0.5)*tau}; })
     .style("fill", "red")
     .attr("class", "path.myArc")
-    .attr("d", function(d) { return myArc({startAngle: (d/100-0.5)*tau});} )
-    .attr("transform", function(d,i) { return "translate(" + (20+i*(160-3*i)) + ", 80)";});
+    .attr("d", myArc_sc)
+    .attr("transform", function(d,i) { return "translate(" + (20+i*(160-3*i)) + ", 80)";})
+    .on("click", arcTween);
 
 svg.selectAll("path.myArc").data(dataset).enter()
   .append("text")

@@ -36,9 +36,30 @@ g_left.append("path")
     .attr("fill", function(d, i) { return "#" + colors[i]; })
     .attr("stroke", "#ffffff") // Add white-space between segments
     .attr("stroke-width", "2") // Define width of white-space
-    .attr("d", myArc);
+    .attr("d", myArc)
+    .on("mouseover", function(d, i) {
+        myArc.outerRadius(radius+10)
+        d3.select("text.pie_left_text" + i)
+            .style("font-weight", "bold")
+            .style("font-size", "48px")
+        d3.select(this).transition()
+            .ease(d3.easeQuadOut)
+            .duration(500)
+            .attr("d", myArc)
+    })
+    .on("mouseout", function(d, i) {
+        myArc.outerRadius(radius-10)
+        d3.select("text.pie_left_text" + i)
+            .style("font-weight", "normal")
+            .style("font-size", "36px")
+        d3.select(this).transition()
+            .ease(d3.easeQuadOut)
+            .duration(500)
+            .attr("d", myArc)
+    });
 
 g_left.append("text")
+    .attr("class", function(d, i) { return ("pie_left_text" + i);})
     .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")";})
     .attr("dy", ".35em")        // Centers text nicely
     .style("fill", "White")
@@ -59,9 +80,30 @@ g_right.append("path")
     .attr("fill", function(d, i) { return "#" + colors[i]; })
     .attr("stroke", "#ffffff") // Add white-space between segments
     .attr("stroke-width", "2") // Define width of white-space
-    .attr("d", myArc);
+    .attr("d", myArc)
+    .on("mouseover", function(d, i) {
+        myArc.outerRadius(radius+10)
+        d3.select("text.pie_right_text" + i)
+            .style("font-weight", "bold")
+            .style("font-size", "48px")
+        d3.select(this).transition()
+            .ease(d3.easeQuadOut)
+            .duration(500)
+            .attr("d", myArc)
+    })
+    .on("mouseout", function(d, i) {
+        myArc.outerRadius(radius-10)
+        d3.select("text.pie_right_text" + i)
+            .style("font-weight", "normal")
+            .style("font-size", "36px")
+        d3.select(this).transition()
+            .ease(d3.easeQuadOut)
+            .duration(500)
+            .attr("d", myArc)
+    });
 
 g_right.append("text")
+    .attr("class", function(d, i) { return ("pie_right_text" + i);})
     .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")";})
     .attr("dy", ".35em")        // Centers text nicely
     .attr("dx", "-.35em")        // Centers text nicely
