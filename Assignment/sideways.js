@@ -5,7 +5,7 @@ var margin = {top: 30, right: 20, bottom: 20, left:97};
 var w = 800 - margin.left - margin.right;
 var h = 200 - margin.top - margin.bottom;
 
-var svg = d3.select("body").append("svg")
+var svg = d3.select("#sideways").append("svg")
     .attr("width", w + margin.left + margin.right)
     .attr("height", h + margin.top + margin.bottom)
   .append("g")

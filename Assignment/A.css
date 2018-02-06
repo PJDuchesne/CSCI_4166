@@ -16,6 +16,7 @@ body {
     font-family: 'Bebas-Neue';
     font-size: 36px;
     text-align: left;
+    background-color: #FBFBFB; /* Background in provided photo ranges from #FAFAFA to #FCFCFC in areas */
 }
 
 .axisL path { stroke-width: 0px; }
@@ -47,3 +48,7 @@ body {
     position: absolute;
 }
 
+.cursor {
+    width: 40px;
+    height: 40px;
+}

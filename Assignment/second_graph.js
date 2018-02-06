@@ -1,6 +1,6 @@
 var data = [ 72, 105, 120, 145, 157, 170 ];
 
-var margin = {top: 20, right: 20, bottom: 30, left:40};
+var margin = {top: 70, right: 20, bottom: 30, left:90};
 
 var w = 800 - margin.left - margin.right;
 var h = 400 - margin.top - margin.bottom;
@@ -12,7 +12,7 @@ var x = d3.scaleBand()
 var y = d3.scaleLinear()
       .range([h, 0]);
 
-var svg = d3.select("body").append("svg")
+var svg = d3.select("#second_graph").append("svg")
     .attr("width", w + margin.left + margin.right)
     .attr("height", h + margin.top + margin.bottom)
   .append("g")
@@ -52,4 +52,13 @@ svg.append("g")
     .attr("class", "axisL")
     .call(d3.axisLeft(y)
        .ticks(4));
+
+var snoot = svg.selectAll("snoot").data([0]).enter().append("image")
+    .attr("class", "snoot")
+    .attr("xlink:href", "images/image10.jpg")
+    .attr("transform", "translate(480, -85)")
+    .on("click", function() {
+        console.log("Foobar")
+        snoot_storm()
+    })
 

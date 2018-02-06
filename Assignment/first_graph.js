@@ -12,7 +12,7 @@ var x_fg = d3.scaleBand()
 var y_fg = d3.scaleLinear()
       .range([h, 0]);
 
-var svg_fg = d3.select("body").append("svg")
+var svg_fg = d3.select("#first_graph").append("svg")
     .attr("width", w + margin.left + margin.right)
     .attr("height", h + margin.top + margin.bottom)
   .append("g")
@@ -84,3 +84,5 @@ svg_fg.append("g")
     .attr("class", "axisL")
     .call(d3.axisLeft(y_fg)
        .ticks(6));
+
+
