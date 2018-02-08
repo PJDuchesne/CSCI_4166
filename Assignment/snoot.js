@@ -1,8 +1,7 @@
 
 
 var w = 800
-// var h = 4375
-var h = 4775
+var h = 4350
 
 // var test_x = 570
 // var test_y = 2135
@@ -16,7 +15,7 @@ var svg_snoot = d3.select("body").append("svg")
   .append("g")
 
 
-for(i_snoot = 0; i_snoot < 720; i_snoot++) {
+for(i_snoot = 0; i_snoot < 704; i_snoot++) {
     var tmp = svg_snoot.selectAll("snootL").data([0]).enter().append("image")
         .attr("class", "snootL")
         .attr("id", ("snootL" + i_snoot))
@@ -39,7 +38,7 @@ for(i_snoot = 0; i_snoot < 720; i_snoot++) {
         .attr("y", (((i_snoot - i_snoot%8)/8)*50))
 }
 
-for(i_snoot = 0; i_snoot < 90; i_snoot++) {
+for(i_snoot = 0; i_snoot < 88; i_snoot++) {
     var tmp = svg_snoot.selectAll("snootL_leader").data([0]).enter().append("image")
         .attr("class", "snootL_leader")
         .attr("id", ("snootL_leader" + i_snoot))
