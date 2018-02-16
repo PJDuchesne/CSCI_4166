@@ -1,25 +1,31 @@
-var margin = {top: 20, right: 20, bottom: 20, left:97};
-var w = 800 - margin.left - margin.right;
-var h = 250 - margin.top - margin.bottom;
+// Note: Variables in this file use '_sc' suffixes standing for 'semi circles'
 
-var svg = d3.select("#Semi_Circles").append("svg")
-    .attr("width", w + margin.left + margin.right)
-    .attr("height", h + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform",
-              "translate(" + margin.left + "," + margin.top + ")");
+// Define margin, width and height for SVG canvas
+var margin_sc = {top: 20, right: 20, bottom: 20, left:97};
+var width_sc = 800 - margin_sc.left - margin_sc.right;
+var height_sc = 250 - margin_sc.top - margin_sc.bottom;
 
-var dataset = [70, 65, 38, 35, 26];
+// Define data for arcs
+var data_sc = [70, 65, 38, 35, 26];
 
+// Define tau for ease of readability
 tau = 2*Math.PI;
 
+// Create SVG canvas
+var svg_sc = d3.select("#Semi_Circles").append("svg")
+    .attr("width", width_sc + margin_sc.left + margin_sc.right)
+    .attr("height", height_sc + margin_sc.top + margin_sc.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin_sc.left + "," + margin_sc.top + ")");
+
+// Define arc function
 var myArc_sc = d3.arc()
     .innerRadius(52)
     .outerRadius(70)
     .startAngle(0.5*tau);
 
-var test1234 = 1
-
+// Define function for transition
 function arcTween_sc(d, i) {
     var old_value;      // Stores value to return to
     d3.select(this)
@@ -51,8 +57,10 @@ function arcTween_sc(d, i) {
     d.text_flag = 1 - d.text_flag
 }
 
-svg.selectAll("path.myArc").data(dataset).enter()
+// Append arcs with transition to the svg canvas
+svg_sc.selectAll("path.myArc").data(data_sc).enter()
   .append("path")
+    // Note the inclusion of the text_flag, used to toggle text back and forth during transition
     .datum( function(d) { return {endAngle: (d/100+0.5)*tau, text_flag: 1}; })
     .style("fill", "red")
     .style("cursor", "pointer")
@@ -61,7 +69,8 @@ svg.selectAll("path.myArc").data(dataset).enter()
     .attr("transform", function(d,i) { return "translate(" + (20+i*(160-3*i)) + ", 80)";})
     .on("click", arcTween_sc);
 
-svg.selectAll("path.myArc").data(dataset).enter()
+// Append text to each arc in the appropriate position
+svg_sc.selectAll("path.myArc").data(data_sc).enter()
   .append("text")
     .attr("id", function(d, i) { return "myArc_sc_text" + i})
     .attr("x", function(d, i) { return (25+i*(160-3*i)) })

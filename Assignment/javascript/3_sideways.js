@@ -1,20 +1,22 @@
+// Note: Variables in this file use '_sw' suffixes standing for 'sideways'
+
 // Years are 2009, 2010, and 2011 respectively 
 var data_sw = [80, 72, 69];
 
-var margin = {top: 30, right: 20, bottom: 20, left:97};
-var w = 800 - margin.left - margin.right;
-var h = 200 - margin.top - margin.bottom;
+var margin_sw = {top: 30, right: 20, bottom: 20, left:97};
+var width_sw = 800 - margin_sw.left - margin_sw.right;
+var height_sw = 200 - margin_sw.top - margin_sw.bottom;
 
-var svg = d3.select("#sideways").append("svg")
-    .attr("width", w + margin.left + margin.right)
-    .attr("height", h + margin.top + margin.bottom)
+var svg_sw = d3.select("#sideways").append("svg")
+    .attr("width", width_sw + margin_sw.left + margin_sw.right)
+    .attr("height", height_sw + margin_sw.top + margin_sw.bottom)
   .append("g")
     .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+          "translate(" + margin_sw.left + "," + margin_sw.top + ")");
 
-var color_data = ["ff0000", "000000"]
+var color_data_sw = ["ff0000", "000000"]
 
-svg.selectAll("square_colored").data(color_data).enter()
+svg_sw.selectAll("square_colored").data(color_data_sw).enter()
   .append("rect")
     .style("fill", function(d) { return "#" + d; })
     .attr("class", "square_colored")
@@ -24,25 +26,25 @@ svg.selectAll("square_colored").data(color_data).enter()
     .attr("y", -28)
     .attr("height", 20)
 
-var x = d3.scaleLinear()
-      .range([w, 0]);
+var x_sw = d3.scaleLinear()
+      .range([width_sw, 0]);
 
-var y = d3.scaleBand()
-      .range([0, h])    
+var y_sw = d3.scaleBand()
+      .range([0, height_sw])    
       .padding(0.35);
 
-x.domain([0, 100]);
-y.domain(data_sw.map(function(d, i) { return i + 2009 }));
+x_sw.domain([0, 100]);
+y_sw.domain(data_sw.map(function(d, i) { return i + 2009 }));
 
-var barL = svg.selectAll("#bar_left").data(data_sw).enter()
+var barL_sw = svg_sw.selectAll("#bar_left").data(data_sw).enter()
   .append("rect")
     .style("fill", "red")
     .style("cursor", "pointer")
     .attr("id", "bar_left")
     .attr("x", 0)
-    .attr("width", function(d) { return w - x(d); })
-    .attr("y", function(d, i) { return y(i + 2009); })
-    .attr("height", y.bandwidth())
+    .attr("width", function(d) { return width_sw - x_sw(d); })
+    .attr("y", function(d, i) { return y_sw(i + 2009); })
+    .attr("height", y_sw.bandwidth())
     .on("mousedown", function() {
         d3.select(this)
             .style("cursor", "wait")
@@ -70,23 +72,23 @@ var barL = svg.selectAll("#bar_left").data(data_sw).enter()
             .style("cursor", "pointer")
     })
 
-svg.selectAll("#bar_left").data(data_sw).enter()
+svg_sw.selectAll("#bar_left").data(data_sw).enter()
   .append("text")
     .attr("x", 10)
-    .attr("y", function(d, i) { return y(i + 2009) + y.bandwidth()/2 + 7; })
+    .attr("y", function(d, i) { return y_sw(i + 2009) + y_sw.bandwidth()/2 + 7; })
     .style("fill", "white")
     .style("font-size", "24px")
     .text(function(d) { return d; });
 
-svg.selectAll("#bar_right").data(data_sw).enter()
+svg_sw.selectAll("#bar_right").data(data_sw).enter()
   .append("rect")
     .style("fill", "black")
     .style("cursor", "pointer")
     .attr("id", "bar_right")
-    .attr("x", function(d) { return w - x(d); })
-    .attr("width", function(d) { return x(d); })
-    .attr("y", function(d, i) { return y(i + 2009); })
-    .attr("height", y.bandwidth())
+    .attr("x", function(d) { return width_sw - x_sw(d); })
+    .attr("width", function(d) { return x_sw(d); })
+    .attr("y", function(d, i) { return y_sw(i + 2009); })
+    .attr("height", y_sw.bandwidth())
     .on("mousedown", function() {
         d3.select(this)
             .style("cursor", "wait")
@@ -113,15 +115,15 @@ svg.selectAll("#bar_right").data(data_sw).enter()
             .style("cursor", "pointer")
     })
 
-svg.selectAll("#bar_right").data(data_sw).enter()
+svg_sw.selectAll("#bar_right").data(data_sw).enter()
   .append("text")
-    .attr("x", w-30)
-    .attr("y", function(d, i) { return y(i + 2009) + y.bandwidth()/2 + 7; })
+    .attr("x", width_sw-30)
+    .attr("y", function(d, i) { return y_sw(i + 2009) + y_sw.bandwidth()/2 + 7; })
     .style("fill", "white")
     .style("font-size", "24px")
     .text(function(d) { return 100 - d; });
 
-svg.append("g")
+svg_sw.append("g")
     .attr("class", "axisL")
-    .call(d3.axisLeft(y)
+    .call(d3.axisLeft(y_sw)
        .ticks(3));

@@ -1,46 +1,56 @@
-var data = [ 72, 105, 120, 145, 157, 170 ];
+// Note: Variables in this file use '_sg' suffixes standing for 'second graph'
 
-var margin = {top: 70, right: 20, bottom: 30, left:90};
+// Define margin, width and height for SVG canvas
+var margin_sg = {top: 70, right: 20, bottom: 30, left:90};
+var width_sg = 800 - margin_sg.left - margin_sg.right;
+var height_sg = 400 - margin_sg.top - margin_sg.bottom;
 
-var w = 800 - margin.left - margin.right;
-var h = 400 - margin.top - margin.bottom;
+// Define pproximated data for second graph
+var data_sg = [ 72, 105, 120, 145, 157, 170 ];
 
+// Defining X and Y scales
 var x_sg = d3.scaleBand()
-      .range([0, w])    
+      .range([0, width_sg])    
       .padding(0.5);
 
 var y_sg = d3.scaleLinear()
-      .range([h, 0]);
+      .range([height_sg, 0]);
 
+// Define SVG Canvas
 var svg_sg = d3.select("#second_graph").append("svg")
-    .attr("width", w + margin.left + margin.right)
-    .attr("height", h + margin.top + margin.bottom)
+    .attr("width", width_sg + margin_sg.left + margin_sg.right)
+    .attr("height", height_sg + margin_sg.top + margin_sg.bottom)
   .append("g")
     .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+          "translate(" + margin_sg.left + "," + margin_sg.top + ")");
 
-x_sg.domain(data.map(function(d, i) { return i + 2011 }));
-y_sg.domain([0, d3.max(data, function(d) { return d }) + 40]);
+// Set domains for scales
+x_sg.domain(data_sg.map(function(d, i) { return i + 2011 }));
+y_sg.domain([0, d3.max(data_sg, function(d) { return d }) + 40]);
 
+// Add horizontal lines in the background
 svg_sg.selectAll("line.horizontalGrid").data(y_sg.ticks(4)).enter()
     .append("line")
         .attr("class", "horizontalGrid")
-        .attr("x1", margin.left/4)
-        .attr("x2", w)
+        .attr("x1", margin_sg.left/4)
+        .attr("x2", width_sg)
         .attr("y1", function(d){ return y_sg(d);})
         .attr("y2", function(d){ return y_sg(d);})
         .attr("stroke", "grey")
         .attr("stroke-width", "1px");
 
+// Add thicker bottom line
 svg_sg.select("line.horizontalGrid")
     .attr("stroke-width", "2px");
 
 // Mutex to avoid mouseover transitions when mousing over the text
 var mouseover_sg_flag = 0;
 
+// Function for bar mouseover transition
 function bar_sg_mouseover(d, i) {
     x_sg.padding(0.3)
 
+    // Append temporary text for the mouseover
     svg_sg.append("text")
         .attr("class", "temp")
         .attr("x", x_sg(i + 2011) + (d < 100 ? 25 : 20))
@@ -75,6 +85,9 @@ function bar_sg_mouseover(d, i) {
                 .attr("width", x_sg.bandwidth())
                 .attr("x", x_sg(i + 2011))
 
+            // Remove temporary text on mouseout
+            // This removal was added because the user can exit the bar
+            //   directly from the text, without triggering the rectangle mouseout
             d3.select(this).remove()
         })
 
@@ -86,11 +99,15 @@ function bar_sg_mouseover(d, i) {
         .attr("x", x_sg(i + 2011))
 }
 
+// Function for bar mouseout transition
 function bar_sg_mouseout(d, i) {
     if (mouseover_sg_flag) { return }
 
     x_sg.padding(0.5)
 
+    // Remove temporary text on mouseout
+    // The duration was added to fix a problem where the transition would 
+    //    infinitely when the text was dismissed from the text mouseout function
     d3.selectAll("text.temp").transition().duration(1).remove()
 
     d3.select(("#bar_sg" + i)).transition()
@@ -101,8 +118,9 @@ function bar_sg_mouseout(d, i) {
         .attr("x", x_sg(i + 2011))
 }
 
+// Add data bars
 svg_sg.selectAll("bar")
-    .data(data)
+    .data(data_sg)
   .enter()
   .append("rect")
     .style("fill", "red")
@@ -111,13 +129,14 @@ svg_sg.selectAll("bar")
     .attr("x", function(d, i) { return x_sg(i + 2011); })
     .attr("width", x_sg.bandwidth())
     .attr("y", function(d) { return y_sg(d); })
-    .attr("height", function(d) { return h - y_sg(d); })
+    .attr("height", function(d) { return height_sg - y_sg(d); })
     .on("mouseover", bar_sg_mouseover )
     .on("mouseout", bar_sg_mouseout )
 
+// Adding bottom and left axises
 svg_sg.append("g")
     .attr("class", "axisB")
-    .attr("transform", "translate(0," + h + ")")
+    .attr("transform", "translate(0," + height_sg + ")")
     .call(d3.axisBottom(x_sg));
 
 svg_sg.append("g")
@@ -125,10 +144,11 @@ svg_sg.append("g")
     .call(d3.axisLeft(y_sg)
        .ticks(4));
 
+// Append snoot image (Doodle Jump) as part of the svg canvas
+// See snoot.js for transition details
 var snoot = svg_sg.selectAll("snoot").data([0]).enter().append("image")
     .style("cursor", "pointer")
     .attr("class", "snoot")
     .attr("xlink:href", "images/image10.jpg")
     .attr("transform", "translate(480, -85)")
     .on("click", function() { snoot_storm() })
-

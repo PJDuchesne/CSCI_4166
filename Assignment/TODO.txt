@@ -1,7 +1,0 @@
-1) Comment javascript files individually
-
-2) Fix ambiguous or temporary variable names ("Silly Flag")
-
-3) Shorten CSS styling in A.html
-
-4) Rename A to A1 and so on

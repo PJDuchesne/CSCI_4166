@@ -1,42 +1,42 @@
-var w = 800
-var h = 400
+// Note: Variables in this file use '_p1' suffixes standing for 'pie 1'
 
+// Define width and height for SVG canvas
+var width_p1 = 800
+var height_p1 = 400
+
+// Define colors used in the pie chart
 //              Red       Black     D Grey    L Grey
 var colors = [ "ff0000", "000000", "9c9c9c", "e3e3e3" ];
 
+// Define data used in the pie chart
 var data_p1 = [ 4.0, 43.8, 18.4, 33.7 ];
 
-radius = 150;
+// Radius of pie chart
+radius_p1 = 150;
 
+// Define formatting function to force one significant figure
 var f1 = d3.format(".1f");
 
+// Define pie function that creates pie chart data using arc data
 var myPie_p1 = d3.pie()
             .sort(null) // Turn off automatic data sorting
             .value(function(d) { return d; });
 
+// Define arc function that creates arc data
 var myArc_p1 = d3.arc()
-              .outerRadius(radius-10)
+              .outerRadius(radius_p1-10)
               .innerRadius(0);
 
+// Define function used in transition below
 function circle_iterate(i) {
     if (i < 0 || i > 3) return null;
     return (i == 3) ? 0 : i+1; 
 }
 
-// Start angle remains the same
-function arcTween_p1(newAngle) {
-    return function (d) {
-        console.log(d)
-        var i = d3.interpolate(d.endAngle, newAngle);
-        return function (t) {
-            d.startAngle = i(t);
-            return myArc_p1(d);
-        }
-    }
-}
-
+// Store original pie data for restoring during transition
 var myPie_original = myPie_p1(data_p1)
 
+// Function to transition arc segment to 0 size
 function arcTween_p1_fixed(newAngle, i) {
     return function (d) {
         var inter = d3.interpolate(newAngle, myPie_original[i].endAngle);
@@ -47,6 +47,7 @@ function arcTween_p1_fixed(newAngle, i) {
     }
 }
 
+// Function to restore arc segment to full width
 function arcTween_p1_fixed2(newAngle, i) {
     return function (d) {
         d.startAngle = myPie_original[i].startAngle
@@ -60,16 +61,21 @@ function arcTween_p1_fixed2(newAngle, i) {
 }
 
 // Mutex lock to prevent transitions from interfering with eachother
-var pie1_flag = 0;
+var flag_p1 = 0;
 
+// Hardcoded function that performs a smooth transition
 function pieTween_click(d, i){
 
     // Flag to prevent the transition from restarting on another click
-    if (pie1_flag) return;
+    // Also used to prevent the other transition from interferring
+    if (flag_p1) return;
 
-    pie1_flag = 1;
+    flag_p1 = 1;
+
+    // Speed of the transition
     var speedTween = 1000;
 
+    // This section transitions the pie chart out of existence
     d3.select("text.pie_bottom_text0").transition()
         .duration((data_p1[0]/100)*speedTween)
         .style("fill", "#FBFBFB") // ~White, to match background
@@ -89,6 +95,7 @@ function pieTween_click(d, i){
         .delay(((data_p1[0]+data_p1[1]+data_p1[2])/100)*speedTween)
         .attrTween("d", arcTween_p1_fixed(myPie_original[3].startAngle, 3))
 
+    // This section transitions the pie chart back to its original values
     d3.select("text.pie_bottom_text0").transition()
         .duration((data_p1[0]/100)*speedTween)
         .delay(speedTween)
@@ -109,21 +116,24 @@ function pieTween_click(d, i){
         .duration((data_p1[3]/100)*speedTween)
         .delay(speedTween+((data_p1[0]+data_p1[1]+data_p1[2])/100)*speedTween)
         .attrTween("d", arcTween_p1_fixed2(myPie_original[3].endAngle, 3))
-        .on("end", function() {pie1_flag = 0})
+        .on("end", function() {flag_p1 = 0})
 
 }
 
+// Define SVG canvas used for pie chart
 var svg_p1 = d3.select("#Pie_One").append("svg")
-    .attr("width", w)
-    .attr("height", h)
+    .attr("width", width_p1)
+    .attr("height", height_p1)
       .append("g")
-        .attr("transform", "translate(" + 0.25*w + "," + 0.5*h + ")");
+        .attr("transform", "translate(" + 0.25*width_p1 + "," + 0.5*height_p1 + ")");
 
-var g = svg_p1.selectAll(".slicesBottom").data(myPie(data_p1)).enter()
+// Create arc data
+var g_p1 = svg_p1.selectAll(".slicesBottom").data(myPie(data_p1)).enter()
     .append("g")
         .attr("class", "slicesBottom");
 
-g.append("path")
+// Render arc segments
+g_p1.append("path")
     .datum(function(d) { return {startAngle: d.startAngle, endAngle: d.endAngle};})
     .style("cursor", "pointer")
     .attr("class", function(d, i) { return ("pie_bottom_slice" + i);})
@@ -133,12 +143,14 @@ g.append("path")
     .attr("d", myArc_p1)
     .on("click", pieTween_click)
 
-g.append("text")
+// Add text to the segments
+g_p1.append("text")
     .attr("class", function(d, i) { return ("pie_bottom_text" + i);})
     .style("fill", "#FBFBFB")
     .style("font-size", "44px")
     .text(function(d) { return f1(d.data); });
 
+// Add legend boxes with transition
 svg_p1.selectAll("bar.colored").data(colors).enter()
   .append("rect")
     .style("fill", function(d) { return "#" + d; })
@@ -148,9 +160,9 @@ svg_p1.selectAll("bar.colored").data(colors).enter()
     .attr("y", function(d, i) { return -65+i*35})
     .attr("height", 20)
     .on("mouseover", function(d, i) {
-        if (pie1_flag) return
+        if (flag_p1) return
 
-        myArc_p1.outerRadius(radius+10)
+        myArc_p1.outerRadius(radius_p1+10)
         d3.select("text.pie_bottom_text0").transition()
             .attr("transform", "translate(5, -150)")
 
@@ -176,7 +188,7 @@ svg_p1.selectAll("bar.colored").data(colors).enter()
             .attr("d", myArc_p1)
     })
     .on("mouseout", function(d, i) {
-        if (pie1_flag) return
+        if (flag_p1) return
         if (i == 0 || i == 1) { // Red or Black
             d3.select("text.pie_bottom_text0").transition()
                 .attr("transform", "translate(5, -150)")
@@ -184,7 +196,7 @@ svg_p1.selectAll("bar.colored").data(colors).enter()
                 .style("font-size", "48px")
         }
 
-        myArc_p1.outerRadius(radius-10)
+        myArc_p1.outerRadius(radius_p1-10)
         if (i != 0) {
             d3.select("text.pie_bottom_text" + i).transition()
                 .style("font-weight", "normal")
@@ -197,18 +209,23 @@ svg_p1.selectAll("bar.colored").data(colors).enter()
 
     })
 
-var text = ["CASUAL GAMES", "ACTION, SPORTS, STRATEGY, ROLE-PLAYING","SHOOTER", "OTHER"];
+// Define text used in the legend
+var text_p1 = [ "CASUAL GAMES",
+                "ACTION, SPORTS, STRATEGY, ROLE-PLAYING",
+                "SHOOTER",
+                "OTHER" ];
 
-svg_p1.selectAll("bar.colored").data(text).enter()
+// Add text to each legend box with transition
+svg_p1.selectAll("bar.colored").data(text_p1).enter()
     .append("text")
     .attr("transform", function(d, i) { return "translate(255," + (-47+i*35) + ")";})
     .style("font-size", "24px")
     .text(function(d) {return d;})
     .on("mouseover", function(d, i) {
         // Flag to prevent the transition from restarting on another click
-        if (pie1_flag) return;
+        if (flag_p1) return;
 
-        myArc_p1.outerRadius(radius+10)
+        myArc_p1.outerRadius(radius_p1+10)
         d3.select("text.pie_bottom_text0").transition()
             .attr("transform", "translate(5, -150)")
 
@@ -234,7 +251,7 @@ svg_p1.selectAll("bar.colored").data(text).enter()
             .attr("d", myArc_p1)
     })
     .on("mouseout", function(d, i) {
-        if (pie1_flag) return
+        if (flag_p1) return
         if (i == 0 || i == 1) { // Red or Black
             d3.select("text.pie_bottom_text0").transition()
                 .attr("transform", "translate(5, -150)")
@@ -242,7 +259,7 @@ svg_p1.selectAll("bar.colored").data(text).enter()
                 .style("font-size", "48px")
         }
 
-        myArc_p1.outerRadius(radius-10)
+        myArc_p1.outerRadius(radius_p1-10)
         if (i != 0) {
             d3.select("text.pie_bottom_text" + i).transition()
                 .style("font-weight", "normal")
@@ -254,8 +271,8 @@ svg_p1.selectAll("bar.colored").data(text).enter()
             .attr("d", myArc_p1)
     })
 
+// Manually position text on the pie chart
 d3.select("text.pie_bottom_text0").attr("transform", "translate(5, -150)").style("fill", "black")       // Red
 d3.select("text.pie_bottom_text1").attr("transform", "translate(45, 20)")                               // Black
 d3.select("text.pie_bottom_text2").attr("transform", "translate(-80, 95)")                              // D Grey
 d3.select("text.pie_bottom_text3").attr("transform", "translate(-95, -10)")                             // L Grey
-

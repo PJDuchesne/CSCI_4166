@@ -54,4 +54,12 @@ body {
     font-family: "Times New Roman", Times, serif;
     font-weight: bold;
     font-size: 18px;
+    position: absolute;
+    left: 50px;
+}
+
+#UPPER_CASE {
+    position: absolute;
+    left: 50px;
+    width: 800px;
 }

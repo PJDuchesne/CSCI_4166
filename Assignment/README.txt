@@ -1,5 +1,14 @@
 CSCI 4166: Visualization Assignment 1 README
 
+General Notes:
+    * I rarely use HTML/CSS, the practices done here work but are obviously not best practice
+    * Both files named A are simply short for Assignment (A.html & A.css
+    * The javascript files are numbered in their order of appearance from top to bottom
+
+----------------------------------------------------------------------------------------------
+
+Visualization Guide:
+
 --> First Graph: (first_graph.js)
     > Trigger: Hover cursor over any vertical bar
     > Effect:  Bar will enlarge, change color, and a text box will show the value
