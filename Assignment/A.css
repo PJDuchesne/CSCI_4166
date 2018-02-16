@@ -8,15 +8,12 @@
     font-style: normal;
 }
 
-.text {
-    font-family: 'Bebas-Neue';
-}
-
 body {
     font-family: 'Bebas-Neue';
     font-size: 36px;
     text-align: left;
     background-color: #FBFBFB; /* Background in provided photo ranges from #FAFAFA to #FCFCFC in areas */
+    width: 800px;
 }
 
 .axisL path { stroke-width: 0px; }
@@ -51,4 +48,10 @@ body {
 .cursor {
     width: 40px;
     height: 40px;
+}
+
+#lower_case {
+    font-family: "Times New Roman", Times, serif;
+    font-weight: bold;
+    font-size: 18px;
 }

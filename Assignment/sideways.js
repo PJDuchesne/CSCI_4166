@@ -1,5 +1,5 @@
 // Years are 2009, 2010, and 2011 respectively 
-var dataset1 = [80, 72, 69];
+var data_sw = [80, 72, 69];
 
 var margin = {top: 30, right: 20, bottom: 20, left:97};
 var w = 800 - margin.left - margin.right;
@@ -28,13 +28,13 @@ var x = d3.scaleLinear()
       .range([w, 0]);
 
 var y = d3.scaleBand()
-      .range([0, h*4])    
+      .range([0, h])    
       .padding(0.35);
 
 x.domain([0, 100]);
-y.domain(data.map(function(d, i) { return i + 2009 }));
+y.domain(data_sw.map(function(d, i) { return i + 2009 }));
 
-var barL = svg.selectAll("#bar_left").data(dataset1).enter()
+var barL = svg.selectAll("#bar_left").data(data_sw).enter()
   .append("rect")
     .style("fill", "red")
     .style("cursor", "pointer")
@@ -70,7 +70,7 @@ var barL = svg.selectAll("#bar_left").data(dataset1).enter()
             .style("cursor", "pointer")
     })
 
-svg.selectAll("#bar_left").data(dataset1).enter()
+svg.selectAll("#bar_left").data(data_sw).enter()
   .append("text")
     .attr("x", 10)
     .attr("y", function(d, i) { return y(i + 2009) + y.bandwidth()/2 + 7; })
@@ -78,7 +78,7 @@ svg.selectAll("#bar_left").data(dataset1).enter()
     .style("font-size", "24px")
     .text(function(d) { return d; });
 
-svg.selectAll("#bar_right").data(dataset1).enter()
+svg.selectAll("#bar_right").data(data_sw).enter()
   .append("rect")
     .style("fill", "black")
     .style("cursor", "pointer")
@@ -113,7 +113,7 @@ svg.selectAll("#bar_right").data(dataset1).enter()
             .style("cursor", "pointer")
     })
 
-svg.selectAll("#bar_right").data(dataset1).enter()
+svg.selectAll("#bar_right").data(data_sw).enter()
   .append("text")
     .attr("x", w-30)
     .attr("y", function(d, i) { return y(i + 2009) + y.bandwidth()/2 + 7; })

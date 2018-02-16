@@ -1,32 +1,34 @@
-var data = [6.0, 6.9, 7.0, 7.3, 6.9, 7.3, 9.5, 11.8, 10.5, 10.1, 9.2];
+// Note: Variables in this file use '_fg' to signify that it is for the first graph
 
-var margin = {top: 20, right: 20, bottom: 30, left:80};
+var data_fg = [6.0, 6.9, 7.0, 7.3, 6.9, 7.3, 9.5, 11.8, 10.5, 10.1, 9.2];
 
-var w = 800 - margin.left - margin.right;
-var h = 500 - margin.top - margin.bottom;
+var margin_fg = {top: 20, right: 20, bottom: 30, left:80};
+
+var width_fg = 800 - margin_fg.left - margin_fg.right;
+var height_fg = 500 - margin_fg.top - margin_fg.bottom;
 
 var x_fg = d3.scaleBand()
-      .range([0, w])    
+      .range([0, width_fg])
       .padding(0.5);
 
 var y_fg = d3.scaleLinear()
-      .range([h, 0]);
+      .range([height_fg, 0]);
 
 var svg_fg = d3.select("#first_graph").append("svg")
-    .attr("width", w + margin.left + margin.right)
-    .attr("height", h + margin.top + margin.bottom)
+    .attr("width", width_fg + margin_fg.left + margin_fg.right)
+    .attr("height", height_fg + margin_fg.top + margin_fg.bottom)
   .append("g")
     .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+          "translate(" + margin_fg.left + "," + margin_fg.top + ")");
 
-x_fg.domain(data.map(function(d, i) { return i + 2001 }));
-y_fg.domain([0, d3.max(data, function(d) { return d }) + 1]);
+x_fg.domain(data_fg.map(function(d, i) { return i + 2001 }));
+y_fg.domain([0, d3.max(data_fg, function(d) { return d }) + 1]);
 
 svg_fg.selectAll("line.horizontalGrid").data(y_fg.ticks(6)).enter()
     .append("line")
         .attr("class", "horizontalGrid")
-        .attr("x1", margin.left/4)
-        .attr("x2", w)
+        .attr("x1", margin_fg.left/4)
+        .attr("x2", width_fg)
         .attr("y1", function(d){ return y_fg(d);})
         .attr("y2", function(d){ return y_fg(d);})
         .attr("stroke", "black")
@@ -104,7 +106,7 @@ function bar_fg_mouseout(d, i) {
 }
 
 svg_fg.selectAll("bar")
-    .data(data)
+    .data(data_fg)
   .enter()
   .append("rect")
     .style("fill", "red")
@@ -113,13 +115,13 @@ svg_fg.selectAll("bar")
     .attr("x", function(d, i) { return x_fg(i + 2001); })
     .attr("width", x_fg.bandwidth())
     .attr("y", function(d) { return y_fg(d); })
-    .attr("height", function(d) { return h - y_fg(d); })
+    .attr("height", function(d) { return height_fg - y_fg(d); })
     .on("mouseover", bar_fg_mouseover )
     .on("mouseout", bar_fg_mouseout )
 
 svg_fg.append("g")
     .attr("class", "axisB")
-    .attr("transform", "translate(0," + h + ")")
+    .attr("transform", "translate(0," + height_fg + ")")
     .call(d3.axisBottom(x_fg));
 
 svg_fg.append("g")
