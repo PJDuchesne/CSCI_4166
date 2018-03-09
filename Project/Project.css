@@ -1,0 +1,15 @@
+@font-face {
+  font-family: 'Bebas-Neue';
+    src:  url('font/Bebas-Neue.ttf.woff') format('woff'),
+    url('font/Bebas-Neue.ttf.svg#Bebas-Neue') format('svg'),
+    url('font/Bebas-Neue.ttf.eot'),
+    url('font/Bebas-Neue.eot?#iefix') format('embedded-opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-family: 'Bebas-Neue';
+    font-size: 36px;
+    text-align: left;
+}
