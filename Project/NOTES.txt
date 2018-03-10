@@ -1,0 +1,8 @@
+NOTES.txt
+
+1) Certain feats have specific focuses, Including:
+	--> Weapon Focus (x)
+	--> Skill Focus (x)
+	--> Exotic Weapon Proficiency (x) 
+
+2) Some prerequisites are OR (Denoted with '|')
