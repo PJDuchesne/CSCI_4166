@@ -6,3 +6,9 @@ NOTES.txt
 	--> Exotic Weapon Proficiency (x) 
 
 2) Some prerequisites are OR (Denoted with '|')
+
+3) Mike Bostock with d3.force:
+
+	a) https://bl.ocks.org/mbostock/95aa92e2f4e8345aaa55a4a94d41ce37 (Dynamic A)
+	b) https://bl.ocks.org/mbostock/f584aa36df54c451c94a9d0798caed35 (Dynamic B)
+	c) https://bl.ocks.org/mbostock/1667139 (Static)
