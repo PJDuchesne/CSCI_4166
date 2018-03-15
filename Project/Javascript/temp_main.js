@@ -48,7 +48,6 @@ var links = d3.range(1).map(function(i) {
 });
 
 links.pop();
-links.pop();
 
 console.log(nodes.length)
 console.log(links.length)
@@ -80,7 +79,50 @@ function format_baseline() {
     featString_to_ID_map.set(element.name, index)
   })
 
-  // Set links
+  var tmp_parsing
+
+  // Set node for each and create keymap
+  csv_data_array.forEach(function(element, index) {
+    nodes.push( {
+      index: nodes.length
+    })
+    // This *should* be a 1 to 1, or 1 to 1+1
+    featID_to_Node_map.set(index, nodes.length - 1)
+  })
+
+// var featID_to_Node_map = new Map();
+// var featString_to_ID_map = new Map();
+
+  // Create links based on keymap and parsing
+  csv_data_array.forEach(function(element, index) {
+    if(element.prerequisite_feats != "") {
+      tmp_parsing = parsefeats(element.prerequisite_feats)
+      for(var i = 0; i < tmp_parsing.length; i++)
+      {
+	if (featID_to_Node_map.get(featString_to_ID_map.get(tmp_parsing[i])) != undefined)
+        {
+	  links.push( {
+	    // Source will be the currently parsing feat
+	    source: featID_to_Node_map.get(index),
+	    // Destination will be the prerequisite feats for that feat
+	    target: featID_to_Node_map.get(featString_to_ID_map.get(tmp_parsing[i]))
+	  })
+	  yay1++
+        }
+      }
+    }
+  });
+
+  // TODO: Troubleshoot undefined issue
+  links.forEach(function(element, index) {
+    if (element.target == undefined) {
+      console.log("Link #:" + element.source + " is undefined" )
+    }
+  })
+
+// Set links
+
+/*
 
   csv_data_array.forEach(function(element, index) {
       if(element.prerequisite_feats == "") {
@@ -128,8 +170,9 @@ function format_baseline() {
     }
   });
 
-  console.log("-------------------")
+*/
 
+  console.log("-------------------")
   console.log(nodes)
   console.log(links)
 
@@ -171,9 +214,6 @@ function format_baseline() {
 
   simulation.force("link")
     .links(links)
-
-  //svg_nodes.append("circle")
-  //  .attr("r", 8);
 
   console.log("BARFOO")
 
@@ -230,4 +270,40 @@ console.log(nodes)
 
 var featString_to_ID_map = new Map();
 var featID_to_Node_map = new Map();
+
+// Function that slices prerequisite feats and returns and array of formatted feats
+function parsefeats(d) {
+  // Input must be a string
+  if(typeof(d) != "string") { return -1; }
+
+  // No prerequisite feats, return 0
+  if (d == "") { return 0; } 
+
+  // Replace pipes with commas (TODO: Make this visual)
+  d.replace(/\|/g, ",")
+
+  // Split array by commas
+  var feat_array = d.split(",")
+
+  // Remove unnessecary spaces on front and back of feats
+
+  for(var i = 0; i < feat_array.length; i++ )
+  {
+    if(feat_array[i].indexOf("(") != -1) {
+      feat_array[i] = feat_array[i].substring(0, feat_array[i].indexOf("("))
+    }
+    // Remove leading spaces
+    if(feat_array[i].startsWith(" ")) {
+      feat_array[i] = feat_array[i].slice(1)
+    }
+    // Remove trailing spaces
+    if(feat_array[i].endsWith(" ")) {
+      feat_array[i] = feat_array[i].slice(0, -1)
+    }
+  }
+  
+  return feat_array;
+
+  }
+
 
