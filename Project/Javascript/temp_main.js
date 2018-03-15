@@ -6,10 +6,12 @@ function add(x, y) { return x + y; }
 
 var length_array = new Array(16).fill(0)
 
-var canvas  = document.querySelector("canvas"),
-    canvasContext = canvas.getContext("2d"),
-    width   = canvas.width,
-    height  = canvas.height;
+var width = 3000;
+var height = 1500;
+
+var svg = d3.select("body").append("svg")
+	.attr("width", width)
+	.attr("height", height)
 
 var csv_data_array;
 
@@ -46,6 +48,7 @@ var links = d3.range(1).map(function(i) {
 });
 
 links.pop();
+links.pop();
 
 console.log(nodes.length)
 console.log(links.length)
@@ -61,7 +64,9 @@ function drawNode(d, i) {
   canvasContext.arc(d.x, d.y, 3, 0, 2 * Math.PI);
 }
 
-var simulation;
+var simulation,
+    svg_nodes,
+    svg_links;
 
 function format_baseline() {
   var yay1 = 0;
@@ -77,35 +82,31 @@ function format_baseline() {
 
   // Set links
 
-  // At some point I need to map these node IDs back to csv_data_array ID so I can display data on hover
-
   csv_data_array.forEach(function(element, index) {
-    if(element.prerequisite_feats == "") {
-      nodes.push( {
-        index: nodes.length
-      })
-      links.push( {
-        source: 0,
-        target: nodes.length - 1
-      })
+      if(element.prerequisite_feats == "") {
+        nodes.push( {
+          index: nodes.length
+        })
+        links.push( {
+          source: 0,
+          target: nodes.length - 1
+        })
 
-      featID_to_Node_map.set(index, nodes.length - 1)
+        featID_to_Node_map.set(index, nodes.length - 1)
 
-      yay1++;
-    }
-    else {
-      nay1++;
-    }
+        yay1++;
+      }
+      else {
+        nay1++;
+      }
 
   });
 
   csv_data_array.forEach(function(element, index) {
     // If only 1 prerequisite feat
     if((element.prerequisite_feats != "") && (csv_data_array[index].prerequisite_feats.split(",").length) == 1) {
-      console.log("barfoo")
       // If prerequisite has no prerequisite (i.e. has already been displayed)
       if(featString_to_ID_map.get(element.prerequisite_feats)) {
-        console.log("foobar")
         if(csv_data_array[featString_to_ID_map.get(element.prerequisite_feats)].prerequisite_feats == "") {
           nodes.push( {
             index: nodes.length
@@ -127,86 +128,106 @@ function format_baseline() {
     }
   });
 
+  console.log("-------------------")
+
+  console.log(nodes)
+  console.log(links)
+
+  simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().distance(200).strength(1))
+    .force("charge", d3.forceManyBody())
+    .force("x", d3.forceX(0))
+    .force("y", d3.forceY(0))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+
+  // Set links between all nodes (TODO: Put below node creation)
+  svg_links = svg.selectAll(".link")
+    .data(links)
+    .enter().append("line")
+      .attr("class", "link")
+      .attr("stroke-width", 1)
+      .attr("stroke", "black");
+
+  // Create nodes themselves with hover capacity
+  svg_nodes = svg.selectAll(".node")
+    .data(nodes)
+    .enter().append("g")
+      .attr("class", "node")
+      .on("mouseover", mouseover)
+      .on("mouseout", mouseout)
+      .call(d3.drag()
+ 	.on("start", drag_start)
+	.on("drag", drag)
+	.on("end", drag_end)
+      );
+
+  svg_nodes.append("circle")
+        .attr("r", 3);
+
+  simulation
+    .nodes(nodes)
+    .on("tick", tick)
+
+  simulation.force("link")
+    .links(links)
+
+  //svg_nodes.append("circle")
+  //  .attr("r", 8);
+
+  console.log("BARFOO")
+
   console.log(nodes)
   console.log(links)
 
   console.log(yay1)
   console.log(yay2)
 
-
-  // Start global simulation
-  simulation = d3.forceSimulation(nodes)
-    .force("charge", d3.forceManyBody())
-    .force("link", d3.forceLink(links).distance(800).strength(1))
-    .force("x", d3.forceX())
-    .force("y", d3.forceY())
-    .on("tick", ticked);
-
 }
 
-// All below is standard code from https://bl.ocks.org/mbostock/95aa92e2f4e8345aaa55a4a94d41ce37
-
-d3.select(canvas)
-    .call(d3.drag()
-        .container(canvas)
-        .subject(dragsubject)
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended));
-
-function ticked() {
-  canvasContext.clearRect(0, 0, width, height);
-  canvasContext.save();
-  canvasContext.translate(width / 2, height / 2);
-
-  canvasContext.beginPath();
-  links.forEach(drawLink);
-  canvasContext.strokeStyle = "#aaa";
-  canvasContext.stroke();
-
-  canvasContext.beginPath();
-  nodes.forEach(drawNode);
-  canvasContext.fill();
-  canvasContext.strokeStyle = "#fff";
-  canvasContext.stroke();
-
-  canvasContext.restore();
+// Basic tick function for iterating through time, from Mike Bostock (Creator of D3)
+function tick() {
+  svg_links
+    .attr("x1", function(d) { return d.source.x; })
+    .attr("y1", function(d) { return d.source.y; })
+    .attr("x2", function(d) { return d.target.x; })
+    .attr("y2", function(d) { return d.target.y; });
+  svg_nodes
+    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 }
 
-function dragsubject() {
-  return simulation.find(d3.event.x - width / 2, d3.event.y - height / 2);
+function mouseover() {
+  d3.select(this).select("circle").transition()
+    .duration(250)
+    .attr("fill", "green")
 }
 
-function dragstarted() {
+function mouseout() {
+    d3.select(this).select("circle").transition()
+	.duration(250)
+	.attr("fill", "black")
+}
+
+function drag_start() {
   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
   d3.event.subject.fx = d3.event.subject.x;
   d3.event.subject.fy = d3.event.subject.y;
 }
 
-function dragged() {
+function drag() {
   d3.event.subject.fx = d3.event.x;
   d3.event.subject.fy = d3.event.y;
 }
 
-function dragended() {
+function drag_end() {
   if (!d3.event.active) simulation.alphaTarget(0);
   d3.event.subject.fx = null;
   d3.event.subject.fy = null;
 }
-
-function drawLink(d, i) {
-  canvasContext.moveTo(d.source.x, d.source.y);
-  canvasContext.lineTo(d.target.x, d.target.y);
-}
-
-function drawNode(d, i) {
-  canvasContext.moveTo(d.x + 3, d.y);
-  canvasContext.arc(d.x, d.y, 3, 0, 2 * Math.PI);
-}
-
 
 console.log(links)
 console.log(nodes)
 
 var featString_to_ID_map = new Map();
 var featID_to_Node_map = new Map();
+
