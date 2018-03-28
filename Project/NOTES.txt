@@ -14,5 +14,19 @@ NOTES.txt
 	c) https://bl.ocks.org/mbostock/1667139 (Static)
 
 4) Feat TYPES:
-	- General
-	- TODO: Finish this list for tidiness
+	- General 		 	1480
+	- Combat 			1076
+	- Mythic 			158
+	- Metamagic 		73
+	- Story 			67
+	- Monster 			30
+	- Other				20			NEW
+	- Item Creation 	17
+	- Grit				1			Done
+	- Achievement 	 	4			Done
+	- Familiar 		 	8			DONE
+	- Teamwork 		 	2			DONE
+	- Item Mastery 	 	4			DONE
+	- Meditation 		4			DONE
+
+	--> Combined GRIT, Achievement, Familiar, Teamwork, Item Master, and Meditation into 'Other'
