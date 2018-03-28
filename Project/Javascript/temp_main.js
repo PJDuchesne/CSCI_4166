@@ -7,7 +7,7 @@ function add(x, y) { return x + y; }
 var length_array = new Array(16).fill(0)
 
 var width = 3000;
-var height = 1500;
+var height = 2000;
 
 var svg = d3.select("body").append("svg")
 	.attr("width", width)
@@ -76,7 +76,8 @@ function format_baseline() {
 
   // Fill keymap
   csv_data_array.forEach(function(element, index) {
-    featString_to_ID_map.set(element.name, index)
+    featString_to_featID_map.set(element.name, index)
+    featID_to_stringID_map.set(index, element.name)
   })
 
   var tmp_parsing
@@ -87,28 +88,42 @@ function format_baseline() {
       index: nodes.length
     })
     // This *should* be a 1 to 1, or 1 to 1+1
-    featID_to_Node_map.set(index, nodes.length - 1)
+    featID_to_NodeID_map.set(index, nodes.length - 1)
+    nodeID_to_featID_map.set(nodes.length - 1, index)
   })
-
-// var featID_to_Node_map = new Map();
-// var featString_to_ID_map = new Map();
 
   // Create links based on keymap and parsing
   csv_data_array.forEach(function(element, index) {
-    if(element.prerequisite_feats != "") {
+    if(element.prerequisite_feats == "") 
+    {
+      links.push( {
+        // Source will be the root!
+	source: 0,
+	// Destination will be the currently parsing feat
+	target: featID_to_NodeID_map.get(index)
+      })
+
+    }
+    else
+    {
       tmp_parsing = parsefeats(element.prerequisite_feats)
       for(var i = 0; i < tmp_parsing.length; i++)
       {
-	if (featID_to_Node_map.get(featString_to_ID_map.get(tmp_parsing[i])) != undefined)
+
+
+	if (featID_to_NodeID_map.get(featString_to_featID_map.get(tmp_parsing[i])) != undefined)
         {
 	  links.push( {
-	    // Source will be the currently parsing feat
-	    source: featID_to_Node_map.get(index),
-	    // Destination will be the prerequisite feats for that feat
-	    target: featID_to_Node_map.get(featString_to_ID_map.get(tmp_parsing[i]))
+	    // Source will be the prerequisite feats for that feat
+	    source: featID_to_NodeID_map.get(featString_to_featID_map.get(tmp_parsing[i])),
+	    // Destination will be the currently parsing feat
+	    target: featID_to_NodeID_map.get(index)
 	  })
 	  yay1++
         }
+	else {
+	  yay2++;
+	}
       }
     }
   });
@@ -122,57 +137,8 @@ function format_baseline() {
 
 // Set links
 
-/*
-
-  csv_data_array.forEach(function(element, index) {
-      if(element.prerequisite_feats == "") {
-        nodes.push( {
-          index: nodes.length
-        })
-        links.push( {
-          source: 0,
-          target: nodes.length - 1
-        })
-
-        featID_to_Node_map.set(index, nodes.length - 1)
-
-        yay1++;
-      }
-      else {
-        nay1++;
-      }
-
-  });
-
-  csv_data_array.forEach(function(element, index) {
-    // If only 1 prerequisite feat
-    if((element.prerequisite_feats != "") && (csv_data_array[index].prerequisite_feats.split(",").length) == 1) {
-      // If prerequisite has no prerequisite (i.e. has already been displayed)
-      if(featString_to_ID_map.get(element.prerequisite_feats)) {
-        if(csv_data_array[featString_to_ID_map.get(element.prerequisite_feats)].prerequisite_feats == "") {
-          nodes.push( {
-            index: nodes.length
-          })
-          links.push( {
-            // The source is the single prerequisite feat, which is retrieved by accessing the feat string to ID map using the element prerequisite and then using that in the featID_to_Node_map
-            source: featID_to_Node_map.get(featString_to_ID_map.get(element.prerequisite_feats)),
-            target: nodes.length - 1
-          })
-
-          featID_to_Node_map.set(index, (nodes.length - 1))
-
-          yay2++;
-        }
-        else {
-          nay2++;
-        }
-      }
-    }
-  });
-
-*/
-
   console.log("-------------------")
+  console.log(csv_data_array)
   console.log(nodes)
   console.log(links)
 
@@ -197,8 +163,8 @@ function format_baseline() {
     .data(nodes)
     .enter().append("g")
       .attr("class", "node")
-      .on("mouseover", mouseover)
-      .on("mouseout", mouseout)
+      .on("mouseover", node_tooltip.show)
+      .on("mouseout", node_tooltip.hide)
       .call(d3.drag()
  	.on("start", drag_start)
 	.on("drag", drag)
@@ -268,9 +234,6 @@ function drag_end() {
 console.log(links)
 console.log(nodes)
 
-var featString_to_ID_map = new Map();
-var featID_to_Node_map = new Map();
-
 // Function that slices prerequisite feats and returns and array of formatted feats
 function parsefeats(d) {
   // Input must be a string
@@ -306,4 +269,26 @@ function parsefeats(d) {
 
   }
 
+// TOOLTIP STUFF HERE: Uses the d3-tip library extension that mimics d3-v3's tooltip functionality
+
+var node_tooltip = d3.tip()
+      .attr("class", "d3-tip")
+      .offset([-8, 0])
+      .html(function(d) { 
+	console.log("----------------TOOLTIP---------------")
+        console.log(d)
+	console.log(nodeID_to_featID_map.get(d.index))
+	console.log(featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)))
+	console.log("----------------TOOLTIP_END-----------")
+	return featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)); 
+      })
+
+svg.call(node_tooltip)
+
+var featString_to_featID_map = new Map();
+var featID_to_stringID_map = new Map();
+var featID_to_NodeID_map = new Map();
+var nodeID_to_featID_map = new Map();
+
+var roots_ENUM = Object.freeze({})
 
