@@ -30,3 +30,28 @@ NOTES.txt
 	- Meditation 		4			DONE
 
 	--> Combined GRIT, Achievement, Familiar, Teamwork, Item Master, and Meditation into 'Other'
+
+5) Central Algebra:
+
+	X AXIS --> Sine wave??
+
+	#0: 0
+	#1: algebra_x
+	#2: link_distance_metric
+	#3: algebra_x
+	#4: 0
+	#5: -algebra_x
+	#6: -link_distance_metric
+	#7: -algebra_x
+
+	Y AXIS --> Cos wave??
+
+	#0: -link_distance_metric
+	#1: -algebra_y
+	#2: 0
+	#3: algebra_y
+	#4: link_distance_matric
+	#5: algebra_y
+	#6: 0
+	#7: -algebra_y
+

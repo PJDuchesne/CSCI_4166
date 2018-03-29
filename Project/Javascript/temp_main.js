@@ -8,6 +8,7 @@ var length_array = new Array(16).fill(0)
 
 var width = 4500;
 var height = 3000;
+var link_distance_metric = 600;
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -46,34 +47,71 @@ var JS_ENUM = ({"Root": 0,
 
 Object.freeze(JS_ENUM)
 
-console.log("ABC")
+var num_categories = Object.keys(JS_ENUM).length - 1;
 
-console.log(Object.keys(JS_ENUM).length)
+var algebra_angle = Math.PI/num_categories
+var algebra_hyp = 2*link_distance_metric*Math.sin(algebra_angle)
 
-console.log("CBA")
 
+function compute_X(input) {
+    return (Math.sin(2*Math.PI*(input/num_categories))*link_distance_metric)
+}
 
-// Creates root and named feat types (From JS_ENUM)
-var nodes = d3.range(Object.keys(JS_ENUM).length).map(function(i) {
-    return {
-        index: i
-    };
+function compute_Y(input) {
+    return -(Math.cos(2*Math.PI*(input/num_categories))*link_distance_metric)
+}
+
+// Creates root and named feat types
+var nodes = d3.range(num_categories+1).map(function(i) {
+    if (i==0) {
+        return {
+            index: i,
+            fx: width/2,
+            fy: height/2,
+            r: 30
+        };
+    }
+    else {
+        return {
+            index: i,
+            fx: width/2 + compute_X(i-1),
+            fy: height/2 + compute_Y(i-1),
+            r: 20
+        };
+    }
 });
 
 // Link base types for feats to root!
-var links = d3.range(1).map(function(i) {
+var links = d3.range(num_categories+1).map(function(i) {
     return {
         source: 0,
-        target: i
+        target: i   // Directly encode color of root
     };
 });
 
-links.pop();
+links.shift();
 
-console.log("HAAAAAB")
-console.log(nodes.length)
-console.log(links.length)
-console.log("BAAAAAH")
+for (var i = 1; i < num_categories + 1; i++) {
+    if (i < num_categories ) {
+        links.push( {
+            source: i,
+            target: i+1,
+            type: i   // Directly encode color of root
+        })
+    }
+    else {
+        links.push( {
+            source: i,
+            target: 1,
+            type: i   // Directly encode color of root nodes for each type
+        })
+    }
+}
+
+// console.log("HAAAAAB")
+// console.log(nodes.length)
+// console.log(links.length)
+// console.log("BAAAAAH")
 
 // These two functions from Mike Bostock
 function drawLink(d, i) {
@@ -90,6 +128,247 @@ var simulation,
 svg_nodes,
 svg_links;
 
+function feat_type_to_color(type) {
+    switch (type) {
+        case 0:
+        case 'Root':
+            return 'Black'
+            break;
+        case 1:
+        case 'General':
+            return 'Green' 
+            break;
+        case 2:
+        case 'Combat':
+            return 'Red' 
+            break;
+        case 3:
+        case 'Mythic':
+            return 'Gold' 
+            break;
+        case 4:
+        case 'Metamagic':
+            return 'Blue' 
+            break;
+        case 5:
+        case 'Story':
+            return 'Purple' 
+            break;
+        case 6:
+        case 'Monster':
+            return 'Pink' 
+            break;
+        case 7:
+        case 'Other':
+            return 'Grey' 
+            break;
+        case 8:
+        case 'Item Creation':
+            return 'Brown' 
+            break;
+        default:
+            console.log("INVALID Type: " + type)
+            // while(1);
+            break;
+    }
+}
+
+function feat_type_to_number(type) {
+    switch (type) {
+        case 'Root':
+            return 0
+            break;
+        case 'General':
+            return 1 
+            break;
+        case 'Combat':
+            return 2
+            break;
+        case 'Mythic':
+            return 3
+            break;
+        case 'Metamagic':
+            return 4
+            break;
+        case 'Story':
+            return 5
+            break;
+        case 'Monster':
+            return 6
+            break;
+        case 'Other':
+            return 7
+            break;
+        case 'Item Creation':
+            return 8
+            break;
+        default:
+            console.log("INVALID Type: " + type)
+            // while(1);
+            break;
+    }
+}
+
+// Filled outright in format_baseline()
+var featString_to_featID_map = new Map();
+var featID_to_stringID_map = new Map();
+
+// Filled as nodes are created in create_dependencies()
+var featID_to_NodeID_map = new Map();   // Will list ALL nodes associated with a given feat
+var nodeID_to_featID_map = new Map();
+var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node associated with a given feat
+//var MAIN_nodeID_to_featID_map = new Map();
+
+// 1) Create a node for the overall feat
+// 2) Create a node for each prerequisite feat
+// 3) Create a node for each prerequite for each prerequisite feat
+// 4) Iterate like this until all prerequisites have been done and linked back to root (Or base of type)
+// Note: If at any point a node does not have a prerequisite but another node on its layer does, 
+//       add it to an array of nodes to be linked with the total length later
+function create_dependencies(data) {
+    console.log("---------------------CREATE DEPENDANCEIS---------------------")
+    // TODO: Error checking that the input node is valid
+
+    feat_type = feat_type_to_number(data.type)
+    console.log("FEAT TYPE: " + feat_type)
+
+    var tmp_pre_r = parsefeats(data.prerequisite_feats)
+
+    var layer = 0;
+
+    var end_flag = 0;
+
+    console.log(data)
+
+    // Push a new node for the feat itself, larger size!
+    nodes.push( {
+        index: nodes.length,
+        r: 10
+    })
+
+    // Fill keymap for that node
+        // featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1) // TODO: Make this append to existing listing
+    nodeID_to_featID_map.set(nodes.length - 1, featID_to_NodeID_map.size)
+    MAIN_featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1)
+
+    var prerequisite_layers = [[[data.name]]]
+
+    for (var i = 0; i < tmp_pre_r.length; i++) {
+        prerequisite_layers[0][0].push(tmp_pre_r[i])
+    }
+
+    console.log("Bar")
+    console.log(prerequisite_layers)
+
+    var temp_node_array = [[{ name: data.name,
+                             index: nodes.length - 1}], []]
+
+    console.log("FARBOO")
+    console.log(temp_node_array.slice())
+
+    var tmp_src;
+    var tmp_dst;
+
+    while (1) {
+        // Create nodes and links for this layer
+        for(var m = 0; m < prerequisite_layers[layer].length; m++) {
+            // Create nodes for next layer based on non-zero positions of this array
+            for(var n = 1; n < prerequisite_layers[layer][m].length; n++) {
+
+                nodes.push( {
+                    index: nodes.length,
+                    r: 5
+                })
+
+                // Store node in map
+                    // featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1) // TODO: Make this append to existing listing
+                nodeID_to_featID_map.set(nodes.length - 1, featID_to_NodeID_map.size)
+
+                // Push into second array within this array
+                console.log(temp_node_array)
+                temp_node_array[1].push({
+                    name: prerequisite_layers[layer][m][n],
+                    index: nodes.length - 1
+                })
+
+                // Create links based on stuff
+                for(var p = 0; p < temp_node_array[0].length; p++) {
+                    console.log("THIS TRIGGER?")
+
+                    // THIS IS THE SOURCE FOR LINKS
+                    tmp_src = temp_node_array[0][p].index;
+
+                    console.log(temp_node_array[0][p])
+                    // This is finding out where that source needs to be linked to
+                    tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(temp_node_array[0][p].name)].prerequisite_feats)
+
+                    // If there are any prerequisites
+                    if (!(tmp_pre_r <= 0)) {
+                        console.log("THIS TRIGGER??")
+
+                        for (var q = 0; q < tmp_pre_r.length; q++) {
+                            for(var r = 0; r < temp_node_array[1].length; r++) {
+                                if(temp_node_array[1][r].name == tmp_pre_r[q]) {
+                                    tmp_dst = temp_node_array[1][r].index
+                                }
+                            }
+                            
+                            links.push( {
+                                source: tmp_src,
+                                target: tmp_dst
+                            })
+
+                        }
+                    }
+                    // else { <Attach to roots somehow> }
+                }
+            }
+
+            console.log("TEMP_NODE_ARRAY HERE: ")
+            console.log(temp_node_array)
+
+
+            // Create links to these new nodes usingtemp_node_array
+            if (layer != 0) {
+                nodes.push( {
+                    index: nodes.length,
+                    r: 5
+                })
+            }
+
+            console.log("Foo")
+            console.log(prerequisite_layers[layer][m])
+
+//            // Create links based on every position except 0 for previous layer
+//            for(var n = 1; n < prerequisite_layers[layer-1][m].length; n++) {
+//                links.push( {
+//                    source:   ,
+//                    target:
+//                })
+//            }
+
+        }
+
+        // Set up next layer
+
+        layer++;
+        temp_node_array.shift();       // Shift temp array away from values I don't need
+
+        //temp_node_array.push([]);
+        if (prerequisite_layers[layer] == undefined) { break }
+
+    }
+
+    // Link (layer - 1) to root node for that type
+    // Also link any nodes (with appropriate link distance) that 'fell behind'
+
+
+
+    console.log("-------------------END CREATE DEPENDANCEIS-------------------")
+}
+
+var link_strength = 0.5
+
 function format_baseline() {
     var yay1 = 0;
     var nay1 = 0;
@@ -103,87 +382,45 @@ function format_baseline() {
         featID_to_stringID_map.set(index, element.name)
     })
 
-    var tmp_parsing
-
-    // Set node for each and create keymap
-    csv_data_array.forEach(function(element, index) {
-        nodes.push( {
-        index: nodes.length
-    })
-
-        // This *should* be a 1 to 1, or 1 to 1+1
-        featID_to_NodeID_map.set(index, nodes.length - 1)
-        nodeID_to_featID_map.set(nodes.length - 1, index)
-    })
-
-    var feat_type = 0
-
-    // Create links based on keymap and parsing
-    csv_data_array.forEach(function(element, index) {
-        if(element.prerequisite_feats == "") 
-        {
-            for (property in JS_ENUM) {
-                if (property == element.type) {
-                    feat_type = JS_ENUM[property]
-                    break
-                }
-            }
-            links.push( {
-                // Source will be the base feat type
-                source: feat_type,
-                // Destination will be the currently parsing feat
-                target: featID_to_NodeID_map.get(index)
-            })
-
-        }
-        else
-        {
-            tmp_parsing = parsefeats(element.prerequisite_feats)
-            for(var i = 0; i < tmp_parsing.length; i++)
-            {
-                if (featID_to_NodeID_map.get(featString_to_featID_map.get(tmp_parsing[i])) != undefined)
-                {
-                    links.push( {
-                        // Source will be the prerequisite feats for that feat
-                        source: featID_to_NodeID_map.get(featString_to_featID_map.get(tmp_parsing[i])),
-                        // Destination will be the currently parsing feat
-                        target: featID_to_NodeID_map.get(index)
-                    })
-                    yay1++
-                }
-                else {
-                    yay2++;
-                }
-            }
-        }  
-    });
-
-
-    console.log("BARFOOOOOO")
-    // TODO: Troubleshoot undefined issue
-    links.forEach(function(element, index) {
-        if (element.target == undefined) {
-            console.log("Link #:" + element.source + " is undefined" )
-        }
-    })
-    console.log("FOOOOOOBAR")
+    console.log("TESTING CREATION WITH: ")
+    var test_val_TO_DELETE = 500
+    console.log(csv_data_array[test_val_TO_DELETE])
+    create_dependencies(csv_data_array[test_val_TO_DELETE])
 
     // Set links
 
-    console.log("-------------------")
-    console.log(csv_data_array)
-    console.log(nodes)
-    console.log(links)
+//    console.log(csv_data_array)
+//    console.log(nodes)
+//    console.log(links)
 
+    // This should be the same? (WEDNESDAY_1)
     simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().distance(200).strength(1))
+        .force("link", d3.forceLink()
+            .strength(function(d) {
+                if (d.source.index == 0) {
+                    return link_strength;
+                }
+                else if ((d.source.index < num_categories) && (d.target.index < num_categories)) {
+                    return link_strength;
+                }
+                return link_strength             
+
+            })
+            .distance(function(d) {
+                if (d.source.index == 0) {
+                    return link_distance_metric;
+                }
+                else if ((d.source.index < num_categories) && (d.target.index < num_categories)) {
+                    return (algebra_hyp)
+                }
+                return link_distance_metric;
+            }))
         .force("charge", d3.forceManyBody())
         .force("x", d3.forceX(0))
         .force("y", d3.forceY(0))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
-
-    // Set links between all nodes (TODO: Put below node creation)
+    // Set links between all nodes
     svg_links = svg.selectAll(".link")
         .data(links)
         .enter().append("line")
@@ -204,46 +441,17 @@ function format_baseline() {
             .on("end", drag_end)
         );
 
-    console.log("Flaaaaaa")
     svg_nodes.append("circle")
-        .attr("r", 3)
+        .attr("r", function(d) { return d.r })
         .style("fill", function(d) {
             if (csv_data_array[nodeID_to_featID_map.get(d.index)] != undefined)
             {
-                switch (csv_data_array[nodeID_to_featID_map.get(d.index)].type) {
-                    case 'General':
-                        return 'Green' 
-                        break;
-                    case 'Combat':
-                        return 'Red' 
-                        break;
-                    case 'Mythic':
-                        return 'Gold' 
-                        break;
-                    case 'Metamagic':
-                        return 'Blue' 
-                        break;
-                    case 'Story':
-                        return 'Purple' 
-                        break;
-                    case 'Monster':
-                        return 'Black' 
-                        break;
-                    case 'Other':
-                        return 'Grey' 
-                        break;
-                    case 'Item Creation':
-                        return 'Brown' 
-                        break;
-                    default:
-                        console.log("FOUND INVALID TYPE ON NODE: " + d.index)
-                        console.log("Type: " + d.type)
-                        // while(1);
-                        break;
-                }
+                return feat_type_to_color(csv_data_array[nodeID_to_featID_map.get(d.index)].type)
+            }
+            else {
+                return feat_type_to_color(d.index)
             }
         });
-    console.log("aaaaaaalF")
 
     simulation
         .nodes(nodes)
@@ -251,14 +459,6 @@ function format_baseline() {
 
     simulation.force("link")
         .links(links)
-
-    console.log("BARFOO")
-
-    console.log(nodes)
-    console.log(links)
-
-    console.log(yay1)
-    console.log(yay2)
 
 }
 
@@ -285,25 +485,33 @@ function mouseout() {
         .attr("fill", "black")
 }
 
+var fixed_limit = num_categories
+
 function drag_start() {
-    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-    d3.event.subject.fx = d3.event.subject.x;
-    d3.event.subject.fy = d3.event.subject.y;
+    if (d3.event.subject.index > fixed_limit) {
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        d3.event.subject.fx = d3.event.subject.x;
+        d3.event.subject.fy = d3.event.subject.y;
+    }
 }
 
 function drag() {
-    d3.event.subject.fx = d3.event.x;
-    d3.event.subject.fy = d3.event.y;
+    if (d3.event.subject.index > fixed_limit) {
+        d3.event.subject.fx = d3.event.x;
+        d3.event.subject.fy = d3.event.y;
+    }
 }
 
 function drag_end() {
-    if (!d3.event.active) simulation.alphaTarget(0);
-    d3.event.subject.fx = null;
-    d3.event.subject.fy = null;
+    if (d3.event.subject.index > fixed_limit) {
+        if (!d3.event.active) simulation.alphaTarget(0);
+        d3.event.subject.fx = null;
+        d3.event.subject.fy = null;
+    }
 }
 
-console.log(links)
-console.log(nodes)
+// console.log(links)
+// console.log(nodes)
 
 // Function that slices prerequisite feats and returns and array of formatted feats
 function parsefeats(d) {
@@ -313,7 +521,7 @@ function parsefeats(d) {
     // No prerequisite feats, return 0
     if (d == "") { return 0; } 
 
-    // Replace pipes with commas (TODO: Make this visual)
+    // Replace pipes with commas (TODO: Make this visual), THIS DOESN'T WORK
     d.replace(/\|/g, ",")
 
     // Split array by commas
@@ -356,10 +564,4 @@ var node_tooltip = d3.tip()
     })
 
 svg.call(node_tooltip)
-
-var featString_to_featID_map = new Map();
-var featID_to_stringID_map = new Map();
-var featID_to_NodeID_map = new Map();
-var nodeID_to_featID_map = new Map();
-
 
