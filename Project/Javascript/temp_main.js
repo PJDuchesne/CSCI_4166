@@ -22,6 +22,7 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
     csv_data_array = data;
 
     var pre_req_cnt = 0;
+
     for (var x = 0; x < data.length; x++) {
         if (data[x].prerequisite_feats != "") 
         {
@@ -31,8 +32,64 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
         else length_array[0]++
     }
 
-format_baseline()
+    console.log(csv_data_array)
+
+    format_csv_data_array()
+
+    format_baseline()
 });
+
+// Fixes some typos in the dataset
+function format_csv_data_array() {
+    console.log("------------------->>>> Formatting")
+
+    var cnt = 0;
+
+    var tmp_pre_r_array;
+
+    var tmp_flag = 0;
+
+    var new_pre_r_feats = "";
+
+    // For every feat:
+    for (var x = 0; x < csv_data_array.length; x++) {
+
+        // Grab the pre-requisites
+        tmp_pre_r_array = parsefeats(csv_data_array[x].prerequisite_feats)
+
+        // If they exist
+        if(!(tmp_pre_r_array <= 0)) {
+            // Check if any prerequisites are themselves
+            for (var y = 0; y < csv_data_array.length; y++) {
+                if(csv_data_array[x].name == tmp_pre_r_array[y]) {
+                    // Remove from array
+                    tmp_pre_r_array.splice(y, 1)
+                    console.log("THIS FEAT HAS ITSELF AS A PREREQUISITE")
+                    console.log(csv_data_array[x])
+                    console.log(x)
+                    cnt++;
+                    tmp_flag = 1;
+                    break;
+                }
+            }
+
+            if(tmp_flag == 1) {
+                for (var y = 0; y < tmp_pre_r_array.length; y++) {
+                    new_pre_r_feats += (tmp_pre_r_array[y] + ",")
+                }
+                // Cut off last useless comma
+                new_pre_r_feats = new_pre_r_feats.substring(0, new_pre_r_feats.length-1)
+
+                // Append new pre-requisite feats list to data array
+                csv_data_array[x].prerequisite_feats = new_pre_r_feats
+
+                tmp_flag = 0;
+            }
+        }
+    }
+
+    console.log("--------------->>>> Formatting END: " + cnt)
+}
 
 // Create Fake ENUM for each type of feat
 var JS_ENUM = ({"Root": 0,
@@ -257,22 +314,24 @@ function create_dependencies(data) {
         prerequisite_layers[0][0].push(tmp_pre_r[i])
     }
 
-    console.log("Bar")
-    console.log(prerequisite_layers)
-
     var temp_node_array = [[{ name: data.name,
                              index: nodes.length - 1}], []]
-
-    console.log("FARBOO")
-    console.log(temp_node_array.slice())
 
     var tmp_src;
     var tmp_dst;
 
+    // This will loop until all pre-requisites have been created and linked
+    // This is painfully complicated
+
     while (1) {
+        console.log("Infinity_Test: " + layer)
+        prerequisite_layers.push([])
+        console.log(prerequisite_layers.slice())
+
         // Create nodes and links for this layer
         for(var m = 0; m < prerequisite_layers[layer].length; m++) {
             // Create nodes for next layer based on non-zero positions of this array
+            
             for(var n = 1; n < prerequisite_layers[layer][m].length; n++) {
 
                 nodes.push( {
@@ -282,70 +341,81 @@ function create_dependencies(data) {
 
                 // Store node in map
                     // featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1) // TODO: Make this append to existing listing
-                nodeID_to_featID_map.set(nodes.length - 1, featID_to_NodeID_map.size)
+                nodeID_to_featID_map.set(nodes.length - 1, featString_to_featID_map.get(prerequisite_layers[layer][m][n]))
 
-                // Push into second array within this array
-                console.log(temp_node_array)
+                // Push into second array within this array for linking
+                console.log(temp_node_array.slice())
                 temp_node_array[1].push({
                     name: prerequisite_layers[layer][m][n],
                     index: nodes.length - 1
                 })
+                console.log(temp_node_array.slice())
+        
+                // Add values to next layer if it exists
+                if ((prerequisite_layers[layer][m][n].name != "") && (prerequisite_layers[layer][m][n] != undefined)) {
+                    console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+                    console.log(prerequisite_layers[layer][m][n])
+                    console.log(featString_to_featID_map.get(prerequisite_layers[layer][m][n]))
+                    console.log(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])])
+                    console.log(parsefeats(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats))
 
-                // Create links based on stuff
-                for(var p = 0; p < temp_node_array[0].length; p++) {
-                    console.log("THIS TRIGGER?")
+                    tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats)
+                    console.log("Thanks Obama")
+                    console.log(tmp_pre_r.slice())
+                    
+                    // csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats)
 
-                    // THIS IS THE SOURCE FOR LINKS
-                    tmp_src = temp_node_array[0][p].index;
+                    prerequisite_layers[layer+1].push([])
 
-                    console.log(temp_node_array[0][p])
-                    // This is finding out where that source needs to be linked to
-                    tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(temp_node_array[0][p].name)].prerequisite_feats)
+                    prerequisite_layers[layer+1][m].push(prerequisite_layers[layer][m][n])
 
-                    // If there are any prerequisites
-                    if (!(tmp_pre_r <= 0)) {
-                        console.log("THIS TRIGGER??")
-
-                        for (var q = 0; q < tmp_pre_r.length; q++) {
-                            for(var r = 0; r < temp_node_array[1].length; r++) {
-                                if(temp_node_array[1][r].name == tmp_pre_r[q]) {
-                                    tmp_dst = temp_node_array[1][r].index
-                                }
-                            }
-                            
-                            links.push( {
-                                source: tmp_src,
-                                target: tmp_dst
-                            })
-
-                        }
+                    for (var i = 0; i < tmp_pre_r.length; i++) {
+                        prerequisite_layers[layer+1][m].push(tmp_pre_r[i])
                     }
-                    // else { <Attach to roots somehow> }
+
+                    console.log("<<&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&>>")
+
                 }
+
+
+            }
+
+//            console.log("MAKING LINKS USING: (tna -> prl[layer]) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+//            console.log(temp_node_array.slice())
+//            console.log(prerequisite_layers[layer].slice())
+//            console.log(prerequisite_layers[layer][m].slice())
+            // Create links for every feat in temp_node_array[0]
+            for(var p = 0; p < temp_node_array[0].length; p++) {
+                // The source for each link
+                tmp_src = temp_node_array[0][p].index;
+
+                // This is finding out where that source needs to be linked to
+                tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(temp_node_array[0][p].name)].prerequisite_feats)
+
+                // If there are any prerequisites
+                if (!(tmp_pre_r <= 0)) {
+                    for (var q = 0; q < tmp_pre_r.length; q++) {
+                        for(var r = 0; r < temp_node_array[1].length; r++) {
+                            if(temp_node_array[1][r].name == tmp_pre_r[q]) {
+                                tmp_dst = temp_node_array[1][r].index
+                            }
+                        }
+                        links.push( {
+                            source: tmp_src,
+                            target: tmp_dst
+                        })
+
+                    }
+                }
+                // else { <Attach to roots> }
             }
 
             console.log("TEMP_NODE_ARRAY HERE: ")
             console.log(temp_node_array)
 
-
-            // Create links to these new nodes usingtemp_node_array
-            if (layer != 0) {
-                nodes.push( {
-                    index: nodes.length,
-                    r: 5
-                })
-            }
-
             console.log("Foo")
             console.log(prerequisite_layers[layer][m])
-
-//            // Create links based on every position except 0 for previous layer
-//            for(var n = 1; n < prerequisite_layers[layer-1][m].length; n++) {
-//                links.push( {
-//                    source:   ,
-//                    target:
-//                })
-//            }
+            console.log(prerequisite_layers[layer])
 
         }
 
@@ -356,6 +426,9 @@ function create_dependencies(data) {
 
         //temp_node_array.push([]);
         if (prerequisite_layers[layer] == undefined) { break }
+        if (prerequisite_layers[layer] == "") { break }
+
+        console.log("foooooobaaarrr")
 
     }
 
@@ -378,6 +451,11 @@ function format_baseline() {
 
     // Fill keymap
     csv_data_array.forEach(function(element, index) {
+
+        if(element.name == "Improved Unarmed Strike") {
+            console.log("IT EXISTS!!!")
+        }
+
         featString_to_featID_map.set(element.name, index)
         featID_to_stringID_map.set(index, element.name)
     })
@@ -391,7 +469,8 @@ function format_baseline() {
 
 //    console.log(csv_data_array)
 //    console.log(nodes)
-//    console.log(links)
+    console.log("LINKS HERE")
+    console.log(links)
 
     // This should be the same? (WEDNESDAY_1)
     simulation = d3.forceSimulation()
@@ -510,6 +589,7 @@ function drag_end() {
     }
 }
 
+// console.log("<<<< LINKS THEN NODES >>>>")
 // console.log(links)
 // console.log(nodes)
 
