@@ -39,16 +39,15 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
     format_baseline()
 });
 
-// Fixes some typos in the dataset
+// This originally found feats within the dataset whose prerequisites included itself
+// However, this was simply a higher tier of feats, Mythic, that requires the lesser version of itself
+// This was fixed by manually editing the csv file, this function was used to point which ones needed fixing
 function format_csv_data_array() {
     console.log("------------------->>>> Formatting")
 
     var cnt = 0;
-
     var tmp_pre_r_array;
-
     var tmp_flag = 0;
-
     var new_pre_r_feats = "";
 
     // For every feat:
@@ -286,8 +285,6 @@ function create_dependencies(data) {
     console.log("---------------------CREATE DEPENDANCEIS---------------------")
     // TODO: Error checking that the input node is valid
 
-    feat_type = feat_type_to_number(data.type)
-    console.log("FEAT TYPE: " + feat_type)
 
     var tmp_pre_r = parsefeats(data.prerequisite_feats)
 
@@ -295,7 +292,11 @@ function create_dependencies(data) {
 
     var end_flag = 0;
 
+    console.log("DATA: ")
     console.log(data)
+
+    feat_type = feat_type_to_number(data.type)
+    console.log("FEAT TYPE: " + feat_type)
 
     // Push a new node for the feat itself, larger size!
     nodes.push( {
@@ -324,12 +325,16 @@ function create_dependencies(data) {
     // This is painfully complicated
 
     while (1) {
-        console.log("Infinity_Test: " + layer)
+        // TODO: Fix this
+        if(layer == 1) break
+
+        console.log("<<<<<Iterating Through Layer: " + layer + ">>>>>")
         prerequisite_layers.push([])
         console.log(prerequisite_layers.slice())
 
         // Create nodes and links for this layer
         for(var m = 0; m < prerequisite_layers[layer].length; m++) {
+            console.log("\t\t\t<<<<<___ Working on " + layer + " -> feat: " + m + " ___>>>>>")
             // Create nodes for next layer based on non-zero positions of this array
             
             for(var n = 1; n < prerequisite_layers[layer][m].length; n++) {
@@ -345,11 +350,15 @@ function create_dependencies(data) {
 
                 // Push into second array within this array for linking
                 console.log(temp_node_array.slice())
-                temp_node_array[1].push({
-                    name: prerequisite_layers[layer][m][n],
-                    index: nodes.length - 1
-                })
-                console.log(temp_node_array.slice())
+    
+                if(temp_node_array[1] != undefined) {
+                    temp_node_array[1].push({
+                        name: prerequisite_layers[layer][m][n],
+                        index: nodes.length - 1
+                    })
+                    console.log(temp_node_array.slice())
+                }
+
         
                 // Add values to next layer if it exists
                 if ((prerequisite_layers[layer][m][n].name != "") && (prerequisite_layers[layer][m][n] != undefined)) {
@@ -361,7 +370,7 @@ function create_dependencies(data) {
 
                     tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats)
                     console.log("Thanks Obama")
-                    console.log(tmp_pre_r.slice())
+                    console.log(tmp_pre_r)
                     
                     // csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats)
 
@@ -395,6 +404,8 @@ function create_dependencies(data) {
                 // If there are any prerequisites
                 if (!(tmp_pre_r <= 0)) {
                     for (var q = 0; q < tmp_pre_r.length; q++) {
+                        console.log("BREAKING HERE")
+                        console.log(temp_node_array)
                         for(var r = 0; r < temp_node_array[1].length; r++) {
                             if(temp_node_array[1][r].name == tmp_pre_r[q]) {
                                 tmp_dst = temp_node_array[1][r].index
@@ -411,11 +422,11 @@ function create_dependencies(data) {
             }
 
             console.log("TEMP_NODE_ARRAY HERE: ")
-            console.log(temp_node_array)
+            console.log(temp_node_array.slice())
 
             console.log("Foo")
-            console.log(prerequisite_layers[layer][m])
-            console.log(prerequisite_layers[layer])
+            console.log(prerequisite_layers[layer][m].slice())
+            console.log(prerequisite_layers[layer].slice())
 
         }
 
@@ -468,7 +479,8 @@ function format_baseline() {
     // Set links
 
 //    console.log(csv_data_array)
-//    console.log(nodes)
+    console.log("NODES HERE")
+    console.log(nodes)
     console.log("LINKS HERE")
     console.log(links)
 
