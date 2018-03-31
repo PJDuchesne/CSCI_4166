@@ -32,8 +32,6 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
         else length_array[0]++
     }
 
-    console.log(csv_data_array)
-
     format_csv_data_array()
 
     format_baseline()
@@ -85,7 +83,12 @@ function format_csv_data_array() {
                 tmp_flag = 0;
             }
         }
+
+        // Remove confusing ID tags from dataset
+        csv_data_array[x].id = x;
     }
+
+    console.log(csv_data_array)
 
     console.log("--------------->>>> Formatting END: " + cnt)
 }
@@ -107,7 +110,6 @@ var num_categories = Object.keys(JS_ENUM).length - 1;
 
 var algebra_angle = Math.PI/num_categories
 var algebra_hyp = 2*link_distance_metric*Math.sin(algebra_angle)
-
 
 function compute_X(input) {
     return (Math.sin(2*Math.PI*(input/num_categories))*link_distance_metric)
@@ -163,11 +165,6 @@ for (var i = 1; i < num_categories + 1; i++) {
         })
     }
 }
-
-// console.log("HAAAAAB")
-// console.log(nodes.length)
-// console.log(links.length)
-// console.log("BAAAAAH")
 
 // These two functions from Mike Bostock
 function drawLink(d, i) {
@@ -260,6 +257,7 @@ function feat_type_to_number(type) {
             break;
         default:
             console.log("INVALID Type: " + type)
+            return -1;
             // while(1);
             break;
     }
@@ -275,183 +273,507 @@ var nodeID_to_featID_map = new Map();
 var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node associated with a given feat
 //var MAIN_nodeID_to_featID_map = new Map();
 
-// 1) Create a node for the overall feat
-// 2) Create a node for each prerequisite feat
-// 3) Create a node for each prerequite for each prerequisite feat
-// 4) Iterate like this until all prerequisites have been done and linked back to root (Or base of type)
-// Note: If at any point a node does not have a prerequisite but another node on its layer does, 
-//       add it to an array of nodes to be linked with the total length later
+// TODO: Write input/output information here
 function create_dependencies(data) {
-    console.log("---------------------CREATE DEPENDANCEIS---------------------")
+    var dev_mode_tmp = false;
+
+    if (dev_mode_tmp) console.log("---------------------CREATE DEPENDANCEIS---------------------")
+
     // TODO: Error checking that the input node is valid
 
+    var data_obj = anything_to_feat_object(data);
 
-    var tmp_pre_r = parsefeats(data.prerequisite_feats)
+    var feat_type = feat_type_to_number(data_obj.type)
+
+    if (dev_mode_tmp) {
+        console.log("DATA: ")
+        console.log(data_obj)
+    }
+
+    var tmp_total_EI_PR;
+    var tmp_total_PR;
+    var tmp_node_ID;
+
+    // Create node for input feat
+    tmp_node_ID = create_node(data_obj.id, 0, true, 10)
+
+    var layer_cache = [[data_obj.name]]
+    var node_cache = [[tmp_node_ID]]
 
     var layer = 0;
 
-    var end_flag = 0;
+    // Use 'next_layer_checker' to fill layer_cache 
+    while(1) {
+        // Add new layer to caches
+        node_cache.push([])
+        layer_cache.push(next_layer_checker(layer_cache[layer]))
 
-    console.log("DATA: ")
-    console.log(data)
+        if (layer_cache[layer+1].length == 0) { 
+            layer_cache.pop()
+            node_cache.pop()
+            break;
+        }
+        layer++;
+    }
 
-    feat_type = feat_type_to_number(data.type)
-    console.log("FEAT TYPE: " + feat_type)
+    var tmp_node_ID
+
+    // Use layer_cache to create nodes and fill node_cache
+    for (layer = 1; layer < layer_cache.length; layer++) {
+        for (var i = 0; i < layer_cache[layer].length; i++) {
+            tmp_node_ID = create_node(featString_to_featID_map.get(layer_cache[layer][i]), layer)
+            node_cache[layer].push(tmp_node_ID)
+        }   
+    }
+
+    // Decrement layer because it incremented beyond maximum layer in previous for loop
+    layer--;
+
+    // Create links starting from the highest layer and going to 0
+    // Using 'node_cache'
+
+    if (dev_mode_tmp) {
+        console.log("layer_cache")
+        console.log(layer_cache.slice())
+        console.log("node_cache")
+        console.log(node_cache)
+    }
+
+    // Link all nodes on final layer to appropriate root node
+    for (var i = 0; i < node_cache[layer].length; i++) {
+        links.push({
+            source: feat_type,
+            target: node_cache[layer][i]
+        })
+    }
+
+    var testing_links = []
+
+    // For each layer (working backwards)
+    for ( ; layer >= 0; layer--) {
+        if (dev_mode_tmp) console.log("LAYER: " + layer + " ______________ TOP")
+
+        for (var i = 0; i < node_cache[layer].length; i++) {
+            if (dev_mode_tmp) console.log("\t\I: " + i)
+
+            // Check each node cache layer
+            for (var x = 0; x < layer /*node_cache.length */; x++) {
+                if (dev_mode_tmp) console.log("\t\tX: " + i)
+
+                // Check each feat within each node cache layer
+                for (var y = 0; y < node_cache[x].length; y++) {
+                    if (dev_mode_tmp) console.log("\t\t\tY: " + i)
+
+                    tmp_total_EI_PR = list_total_explicity_implicit_PR(nodeID_to_featID_map.get(node_cache[x][y]))
+
+                    if (dev_mode_tmp) {
+                        console.log("\t\t\tTesting Here: (data, <node_cache[x][y]> array)")
+                        console.log(node_cache[layer][i])
+                        console.log(tmp_total_EI_PR.explicit_prerequisites_ID)
+                    }
+
+                    if (array_contains(nodeID_to_featID_map.get(node_cache[layer][i]), tmp_total_EI_PR.explicit_prerequisites_ID)) {
+                        links.push({
+                            source: node_cache[layer][i],
+                            target: node_cache[x][y]
+                        })
+                    }
+
+                    if (tmp_total_EI_PR.explicit_prerequisites_ID.length == 0) {
+                        links.push({
+                            source: feat_type,
+                            target: node_cache[x][y]
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    if (dev_mode_tmp) {
+        console.log("Testing 'list_total_explicity_implicit_PR' with Monkey Shine")
+        console.log(list_total_explicity_implicit_PR(500))
+
+        console.log("testing_links")
+        console.log(testing_links)
+
+        console.log("-------------------END CREATE DEPENDANCEIS-------------------")
+    }
+}
+
+// Input: Array of feat names
+// Output: Array of feat names that should be directly on the next layer
+function next_layer_checker(input_array) {
+    var dev_mode_tmp = false;
+
+    if(dev_mode_tmp) console.log("\n\n\n---------------------next_layer_checker---------------------\n\n\n");
+
+    // If array is empty, return an empty array
+    if (input_array == [] || input_array == undefined) return [];
+
+    // Array of total PR for each feat in input array
+    total_PR_array = []
+
+    // Array of total EI PR for each feat in input array
+    total_EI_PR_array = []
+
+    // Fill information first
+    for (var i = 0; i < input_array.length; i++) {
+        total_PR_array.push(list_total_PR(input_array[i]))
+        total_EI_PR_array.push(list_total_explicity_implicit_PR(input_array[i]))
+    }
+
+    var push_flag;
+    var next_layer_array = []
+
+    // Then go through every feat in input array
+    for (var i = 0; i < input_array.length; i++) {
+        if(dev_mode_tmp) console.log("Test1: " + i + "  ______________ TOP");
+
+        // Go through every feat that this PR explicitly requires, see if any of the other feats IMplicitly require it
+        for (var n = 0; n < total_EI_PR_array[i].explicit_prerequisites_STR.length; n++) {
+            if(dev_mode_tmp) console.log("Test2: " + n);
+            push_flag = true;
+
+            // Go through the other input feats...
+            for (var x = 0; x < total_EI_PR_array.length; x++) {
+                if(dev_mode_tmp) console.log("Test3: " + x);
+                // Don't check the current input feat
+                if (x == i) continue;
+
+                if (array_contains(total_EI_PR_array[i].explicit_prerequisites_STR[n], total_EI_PR_array[x].implicit_prerequisites_STR)) {
+                    push_flag = false
+                    break;
+                }
+            }
+
+            if (push_flag) {
+                next_layer_array.push(total_EI_PR_array[i].explicit_prerequisites_STR[n])
+            }
+        }
+    }
+
+    if(dev_mode_tmp) {
+        console.log("Testing values here")
+        console.log(input_array)
+        console.log(total_PR_array)
+        console.log(total_EI_PR_array)
+
+        console.log("\nReturning: ")
+        console.log(next_layer_array)
+
+        console.log("\n\n\n-------------------next_layer_checker END-------------------\n\n\n");
+    }
+
+    return next_layer_array;
+}
+
+// Input: int <> int <> bool <> int (Last two have assumed values)
+// Creates a node, adds to appropriate keymaps
+// Output: New node
+function create_node(feat_id, layer, main, radius) {
+    if ((feat_id == undefined) || (typeof feat_id != "number")) {
+        console.log("<create_node> ERROR: Invalid feat_id input type")
+        console.log(feat_id)
+        return -1
+    }
+
+    // default 'main' to true; default 'radius' to 5
+    if (main == undefined) main = false;
+    if (radius == undefined) radius = 5;
 
     // Push a new node for the feat itself, larger size!
     nodes.push( {
         index: nodes.length,
-        r: 10
+        layer: layer,
+        r: radius
     })
 
     // Fill keymap for that node
         // featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1) // TODO: Make this append to existing listing
-    nodeID_to_featID_map.set(nodes.length - 1, featID_to_NodeID_map.size)
-    MAIN_featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1)
+    nodeID_to_featID_map.set(nodes.length - 1, feat_id)
+    if (main) MAIN_featID_to_NodeID_map.set(feat_id, nodes.length - 1)    
 
-    var prerequisite_layers = [[[data.name]]]
-
-    for (var i = 0; i < tmp_pre_r.length; i++) {
-        prerequisite_layers[0][0].push(tmp_pre_r[i])
-    }
-
-    var temp_node_array = [[{ name: data.name,
-                             index: nodes.length - 1}], []]
-
-    var tmp_src;
-    var tmp_dst;
-
-    // This will loop until all pre-requisites have been created and linked
-    // This is painfully complicated
-
-    while (1) {
-        // TODO: Fix this
-        if(layer == 1) break
-
-        console.log("<<<<<Iterating Through Layer: " + layer + ">>>>>")
-        prerequisite_layers.push([])
-        console.log(prerequisite_layers.slice())
-
-        // Create nodes and links for this layer
-        for(var m = 0; m < prerequisite_layers[layer].length; m++) {
-            console.log("\t\t\t<<<<<___ Working on " + layer + " -> feat: " + m + " ___>>>>>")
-            // Create nodes for next layer based on non-zero positions of this array
-            
-            for(var n = 1; n < prerequisite_layers[layer][m].length; n++) {
-
-                nodes.push( {
-                    index: nodes.length,
-                    r: 5
-                })
-
-                // Store node in map
-                    // featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1) // TODO: Make this append to existing listing
-                nodeID_to_featID_map.set(nodes.length - 1, featString_to_featID_map.get(prerequisite_layers[layer][m][n]))
-
-                // Push into second array within this array for linking
-                console.log(temp_node_array.slice())
-    
-                if(temp_node_array[1] != undefined) {
-                    temp_node_array[1].push({
-                        name: prerequisite_layers[layer][m][n],
-                        index: nodes.length - 1
-                    })
-                    console.log(temp_node_array.slice())
-                }
-
-        
-                // Add values to next layer if it exists
-                if ((prerequisite_layers[layer][m][n].name != "") && (prerequisite_layers[layer][m][n] != undefined)) {
-                    console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-                    console.log(prerequisite_layers[layer][m][n])
-                    console.log(featString_to_featID_map.get(prerequisite_layers[layer][m][n]))
-                    console.log(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])])
-                    console.log(parsefeats(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats))
-
-                    tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats)
-                    console.log("Thanks Obama")
-                    console.log(tmp_pre_r)
-                    
-                    // csv_data_array[featString_to_featID_map.get(prerequisite_layers[layer][m][n])].prerequisite_feats)
-
-                    prerequisite_layers[layer+1].push([])
-
-                    prerequisite_layers[layer+1][m].push(prerequisite_layers[layer][m][n])
-
-                    for (var i = 0; i < tmp_pre_r.length; i++) {
-                        prerequisite_layers[layer+1][m].push(tmp_pre_r[i])
-                    }
-
-                    console.log("<<&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&>>")
-
-                }
-
-
-            }
-
-//            console.log("MAKING LINKS USING: (tna -> prl[layer]) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-//            console.log(temp_node_array.slice())
-//            console.log(prerequisite_layers[layer].slice())
-//            console.log(prerequisite_layers[layer][m].slice())
-            // Create links for every feat in temp_node_array[0]
-            for(var p = 0; p < temp_node_array[0].length; p++) {
-                // The source for each link
-                tmp_src = temp_node_array[0][p].index;
-
-                // This is finding out where that source needs to be linked to
-                tmp_pre_r = parsefeats(csv_data_array[featString_to_featID_map.get(temp_node_array[0][p].name)].prerequisite_feats)
-
-                // If there are any prerequisites
-                if (!(tmp_pre_r <= 0)) {
-                    for (var q = 0; q < tmp_pre_r.length; q++) {
-                        console.log("BREAKING HERE")
-                        console.log(temp_node_array)
-                        for(var r = 0; r < temp_node_array[1].length; r++) {
-                            if(temp_node_array[1][r].name == tmp_pre_r[q]) {
-                                tmp_dst = temp_node_array[1][r].index
-                            }
-                        }
-                        links.push( {
-                            source: tmp_src,
-                            target: tmp_dst
-                        })
-
-                    }
-                }
-                // else { <Attach to roots> }
-            }
-
-            console.log("TEMP_NODE_ARRAY HERE: ")
-            console.log(temp_node_array.slice())
-
-            console.log("Foo")
-            console.log(prerequisite_layers[layer][m].slice())
-            console.log(prerequisite_layers[layer].slice())
-
-        }
-
-        // Set up next layer
-
-        layer++;
-        temp_node_array.shift();       // Shift temp array away from values I don't need
-
-        //temp_node_array.push([]);
-        if (prerequisite_layers[layer] == undefined) { break }
-        if (prerequisite_layers[layer] == "") { break }
-
-        console.log("foooooobaaarrr")
-
-    }
-
-    // Link (layer - 1) to root node for that type
-    // Also link any nodes (with appropriate link distance) that 'fell behind'
-
-
-
-    console.log("-------------------END CREATE DEPENDANCEIS-------------------")
+    // Return new node index
+    return nodes.length - 1;
 }
 
-var link_strength = 0.5
+
+// Checks if an array contains a given string or integer
+// Returns true if the array contains the entry
+// Returns false if the array does not contain the entry
+function array_contains(data, array) {
+
+    // Basic error checking
+
+    // Ensures array is an array
+    if (typeof array != "object") return -1;
+
+    // Ensures array has at least one entry
+    if (array.length == 0) return false;
+
+    // Ensures array is filled with same type as data
+    if (typeof array[0] != typeof data) return -1;
+
+    // Perform check itself
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == data) return true
+    }
+    
+    // Default to array not containg the item
+    return false;
+}
+
+// TODO: Scrap or finish
+function PR_layers_EI_fn(data) {
+    var dev_mode_tmp = true;
+
+    if (dev_mode_tmp) console.log("\n\n\n---------------------PR_layers_EI_fn---------------------\n\n\n");
+
+    var PR_layers = PR_layers_fn(data)
+
+    var PR_layers_EI = [[PR_layers[0]]]
+
+    var layer_cache = [[PR_layers[0]]]
+
+    var tmp_total_EI_PR;
+
+    // Iterate through each layer
+    for (var layer = 0; layer < PR_layers.length; layer++) {
+        PR_layers_EI.push([])
+        layer_cache.push([])
+        
+        // Check each feat for each layer
+        for (var i = 0; i < PR_layers[layer].length; i++) {
+            tmp_total_EI_PR = list_total_explicity_implicit_PR(PR_layers[layer][i])
+
+//            if () {
+//                PR_layers_EI.push
+//            }
+        }
+    }
+
+    console.log("Returning: ")
+    console.log(PR_layers_EI)
+
+    if (dev_mode_tmp) console.log("\n\n\n-------------------PR_layers_EI_fn END-------------------\n\n\n");
+
+    return PR_layers_EI
+}
+
+
+// Input: string name of feat or data object itself or feat ID
+// Output: Layered structure containing all prerequites of previous layer on each layer. First layer is input feat
+//      NOTE: Does not account for duplicates
+function PR_layers_fn(data) {
+    var dev_mode_tmp = false;
+
+    if (dev_mode_tmp) console.log("\n\n\n---------------------PR_layers_fn---------------------\n\n\n");
+
+    // Temporary variables for function
+    var temp_PR_feats = [];
+    var data_obj = anything_to_feat_object(data)
+
+    var PR_layers = [[data_obj.name]]
+
+    // If no PR, then return immediately
+    if(data_obj.prerequisite_feats == "") {
+        if(dev_mode_tmp) {
+            console.log("Data: ")
+            console.log(data_obj)
+            console.log("Has no prerequisite_feats")
+        }
+        return PR_layers;
+    }
+    else {
+        // Set first layer to the input feat itself
+        var PR_layers = [[data_obj.name]]
+
+        var layer = 0;
+
+        while(1) {
+            // Push a new layer on to be filled, this is layer number 'layer+1'
+            PR_layers.push([])
+
+            // For every feat on this layer
+            for (var i = 0; i < PR_layers[layer].length; i++) {
+                // Directly access array of prerequisite feats from the string name of the feat
+                temp_PR_feats = parsefeats(csv_data_array[featString_to_featID_map.get(PR_layers[layer][i])].prerequisite_feats)
+
+                // Add those feats directly to next layer, ignoring any duplicates
+                if (temp_PR_feats != "") PR_layers[layer+1] = PR_layers[layer+1].concat(temp_PR_feats)
+            }
+
+            if(dev_mode_tmp) {
+                console.log("Layer: " + layer)
+                console.log(PR_layers.slice())
+            }
+            layer++
+
+            // Check if done: (No prerequisites to get from next layer)
+            if(PR_layers[layer].length == 0) break
+
+            // TODO: Remove this insanity check
+            if(layer > 20) break
+        }
+
+        // Pop off the last layer, which is empty
+        PR_layers.pop()
+    }
+
+    if (dev_mode_tmp) console.log("\n\n\n-------------------PR_layers_fn END-------------------\n\n\n");
+
+    return PR_layers
+}
+
+// Input: string name of feat or data object itself or feat ID
+// Output: data object for that feat
+function anything_to_feat_object(data) {
+    // Obtain data_obj no matter what time of input is given
+    switch (typeof data) {
+        case "number":
+            return csv_data_array[data];
+            break;
+        case "string":
+            return csv_data_array[featString_to_featID_map.get(data)];
+            break;
+        case "object":
+            return data;
+            break;
+        default:
+            console.log("<list_total_PR> Error: Invalid input: ")
+            console.log(data)
+            return -1;
+    }
+}
+
+// Input: string name of feat or data object itself or feat ID
+// Output: A single array that contains all prerequisite feats (implicit and explicit) for a given function
+// NOTE: Does account for duplicates!
+function list_total_PR(data) {
+    var dev_mode_tmp = false;
+
+    if (dev_mode_tmp) { 
+        console.log("\n\n\n---------------------LIST TOTAL PR---------------------\n\n\n");
+        console.log(data)
+    }
+
+    // Return Value
+    var total_PR = [];
+
+    var PR_layers = PR_layers_fn(data)
+
+    // Fill the total_PR for returning!
+    // Intentionally skip first item, which is the input feat itself
+    for (var i = 1; i < PR_layers.length; i++) {
+        for(var x = 0; x < PR_layers[i].length; x++) {
+            // If total_PR does not contain this entry, then add it
+            if(!(array_contains(PR_layers[i][x], total_PR))) {
+                total_PR.push(PR_layers[i][x])
+            }
+        }
+    }
+
+    if (dev_mode_tmp) {
+        console.log("PR_layers")
+        console.log(PR_layers.slice())
+
+        console.log("Returning: ")
+        console.log(total_PR)
+
+        console.log("\n\n\n-------------------END LIST TOTAL PR-------------------\n\n\n")
+    }
+
+    return total_PR;
+}
+
+// Input: string name of feat or data object itself or feat ID
+// Output: 
+    // This function will return and structure that has four fields:
+    // explicit_prerequisites_STR: {A_str, B_str, C_str}
+    // implicit_prerequisites_STR: {D_str, E_str, F_str, G_str}
+    // explicit_prerequisites_ID: {A_id, B_id, C_id}
+    // implicit_prerequisites_ID: {D_id, E_id, F_id, G_id}
+function list_total_explicity_implicit_PR(data) {
+    var dev_mode_tmp = false;
+
+    if(dev_mode_tmp) console.log("\n\n\n---------------------list_total_explicity_implicit_PR---------------------\n\n\n");
+
+    // Wasteful? Yes? #JustJavascriptThings
+    var return_structure = {
+        explicit_prerequisites_STR: [],
+        implicit_prerequisites_STR: [],
+        explicit_prerequisites_ID: [],
+        implicit_prerequisites_ID: []
+    }
+
+    var total_input_PR = list_total_PR(data);
+
+    var total_PR_PR_array = [];
+    var data_PR_feats = parsefeats(anything_to_feat_object(data).prerequisite_feats);
+
+    var implicit_flag_array = new Array(data_PR_feats.length).fill(false)
+
+    // Fill total_PR_PR_array
+    for (var i = 0; i < data_PR_feats.length; i++) {
+        total_PR_PR_array.push(list_total_PR(data_PR_feats[i]))
+    }
+
+    // Set implicit_flag_array based on total_PR_PR_array
+    for (var i = 0; i < data_PR_feats.length; i++) {
+        for (var x = 0; x < data_PR_feats.length; x++) {
+            if (x == i) continue;
+
+            // If this data_PR is a PR to another data_PR, it is an implicit requirement
+            if (array_contains(data_PR_feats[i], total_PR_PR_array[x])) {
+                implicit_flag_array[i] = true;
+                break;
+            }
+        }
+    }
+
+    // TODO: Properly test this
+    // Remove data_PR_feats from total_input_PR
+    for (var i = 0; i < data_PR_feats.length; i++) {
+        for (var x = 0; x < total_input_PR.length; x++) {
+            if (data_PR_feats[i] == total_input_PR[x]) {
+                total_input_PR.splice(x, 1)
+                break;
+            }
+        }
+    }
+
+    // Set explicit feats into structure, plus any that are actually implicit (Based on the flag array)
+    for (var i = 0; i < data_PR_feats.length; i++) {
+        if (implicit_flag_array[i] == true) {
+            return_structure.implicit_prerequisites_STR.push(data_PR_feats[i])
+            return_structure.implicit_prerequisites_ID.push(featString_to_featID_map.get(data_PR_feats[i]))
+        }
+        else {
+            return_structure.explicit_prerequisites_STR.push(data_PR_feats[i])
+            return_structure.explicit_prerequisites_ID.push(featString_to_featID_map.get(data_PR_feats[i]))
+        }
+    }
+
+    // TODO: Properly test this
+    for (var i = 0; i < total_input_PR.length; i++) {
+        return_structure.implicit_prerequisites_STR.push(total_input_PR[i])
+        return_structure.implicit_prerequisites_ID.push(featString_to_featID_map.get(total_input_PR[i]))
+    }
+
+    if (dev_mode_tmp) {
+        console.log("Returning: ")
+        console.log(return_structure)
+        console.log("\n\n\n-------------------list_total_explicity_implicit_PR END-------------------\n\n\n")
+    }
+
+    return return_structure
+}
+
+var link_strength = 0.1
+
+// TODO: Figure out why these are broken
+var error_feat_list = [100, 209, 241, 291, 433, 492, 702, 746, 957, 1013, 1188, 1298, 1301, 1302, 1314, 1326, 1362, 1409, 1507, 1603, 1625, 1627, 1636, 1666, 1691, 1746, 1753, 1758, 1771, 1835, 1924, 1939, 1940, 1946, 1947, 1948, 1955, 2049, 2119, 2134, 2135, 2210, 2211, 2254, 2256, 2257, 2282, 2382, 2383, 2384, 2450, 2495, 2525, 2526, 2580, 2645, 2840, 2842, 2856]
 
 function format_baseline() {
     var yay1 = 0;
@@ -463,22 +785,32 @@ function format_baseline() {
     // Fill keymap
     csv_data_array.forEach(function(element, index) {
 
-        if(element.name == "Improved Unarmed Strike") {
-            console.log("IT EXISTS!!!")
-        }
-
+        // Fill string to featID keymap
         featString_to_featID_map.set(element.name, index)
         featID_to_stringID_map.set(index, element.name)
     })
 
-    console.log("TESTING CREATION WITH: ")
-    var test_val_TO_DELETE = 500
-    console.log(csv_data_array[test_val_TO_DELETE])
-    create_dependencies(csv_data_array[test_val_TO_DELETE])
+//    console.log("TESTING CREATION WITH: ")
+//    var test_val_TO_DELETE = 2794
+//    console.log(csv_data_array[test_val_TO_DELETE])
+//    create_dependencies(csv_data_array[test_val_TO_DELETE])
+
+//    console.log("TESTING 'next_layer_checker' CREATION WITH:")
+//    console.log(csv_data_array[test_val_TO_DELETE])
+//    next_layer_checker(csv_data_array[test_val_TO_DELETE])
+
+//    console.log("TESTING 'next_layer_checker' CREATION WITH:")
+//    console.log(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
+//    next_layer_checker(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
+
+    for (var i = 0; i < csv_data_array.length; i++) {
+        if (!(array_contains(i, error_feat_list))) {
+            create_dependencies(csv_data_array[i])
+        }
+    }
 
     // Set links
 
-//    console.log(csv_data_array)
     console.log("NODES HERE")
     console.log(nodes)
     console.log("LINKS HERE")
@@ -501,12 +833,17 @@ function format_baseline() {
                 if (d.source.index == 0) {
                     return link_distance_metric;
                 }
-                else if ((d.source.index < num_categories) && (d.target.index < num_categories)) {
+                else if ((d.source.index <= num_categories) && (d.target.index <= num_categories)) {
                     return (algebra_hyp)
+                }
+                // If they both have layers attached (Which they should), build link distance based off this
+                else if ((nodes[d.source.index].layer != -1) && (nodes[d.target.index].layer != -1)) {
+                    // Distance of 50 for each link layer apart, this will generally be 50 --> TODO: Variable this, or build it off 'link_distance_metric'
+                    return Math.abs((nodes[d.source.index].layer - nodes[d.target.index].layer != -1))*100
                 }
                 return link_distance_metric;
             }))
-        .force("charge", d3.forceManyBody())
+        .force("charge", d3.forceManyBody().strength(-100))
         .force("x", d3.forceX(0))
         .force("y", d3.forceY(0))
         .force("center", d3.forceCenter(width / 2, height / 2));
@@ -580,7 +917,7 @@ var fixed_limit = num_categories
 
 function drag_start() {
     if (d3.event.subject.index > fixed_limit) {
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        if (!d3.event.active) simulation.alphaTarget(0.1).restart();
         d3.event.subject.fx = d3.event.subject.x;
         d3.event.subject.fy = d3.event.subject.y;
     }
