@@ -21,6 +21,7 @@ body {
     border-radius: 2px;
     font-size: 12px;
     padding: 6px;
+    width: 150px;
 }
 
 .d3-tip:after {

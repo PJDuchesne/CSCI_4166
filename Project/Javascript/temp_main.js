@@ -17,7 +17,7 @@ var svg = d3.select("body").append("svg")
 var csv_data_array;
 
 // Read in data and work with it
-// NOTE: Will have to convert da
+// NOTE: Will have to convert data
 d3.csv("/Data/pathfinder_feats.csv", function(data) {
     csv_data_array = data;
 
@@ -35,6 +35,31 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
     format_csv_data_array()
 
     format_baseline()
+
+    // TODO: Remove this, purely used for skill testing
+
+    var tmp_cnt_array123 = [];
+    var tmp_cnt_array456 = [];
+    console.log("<SKILLS HERE ---------------------------->")
+
+    for (var i = 0; i < csv_data_array.length; i++) {
+        if(csv_data_array[i].prerequisite_skills != "") { 
+            tmp_cnt_array123.push(i)
+            console.log(i)
+            console.log(csv_data_array[i].prerequisite_skills)
+
+            if(csv_data_array[i].prerequisite_skills.includes("|")) {
+                tmp_cnt_array456.push(i)
+            }
+        }
+    }
+
+    console.log("<SKILLS HERE ---------------------------- END>")
+    console.log(tmp_cnt_array123.length)
+    console.log(tmp_cnt_array123)
+    console.log(tmp_cnt_array456.length)
+    console.log(tmp_cnt_array456)
+
 });
 
 // This originally found feats within the dataset whose prerequisites included itself
@@ -770,7 +795,7 @@ function list_total_explicity_implicit_PR(data) {
     return return_structure
 }
 
-var link_strength = 0.1
+var link_strength = 0.8
 
 // TODO: Figure out why these are broken
 var error_feat_list = [100, 209, 241, 291, 433, 492, 702, 746, 957, 1013, 1188, 1298, 1301, 1302, 1314, 1326, 1362, 1409, 1507, 1603, 1625, 1627, 1636, 1666, 1691, 1746, 1753, 1758, 1771, 1835, 1924, 1939, 1940, 1946, 1947, 1948, 1955, 2049, 2119, 2134, 2135, 2210, 2211, 2254, 2256, 2257, 2282, 2382, 2383, 2384, 2450, 2495, 2525, 2526, 2580, 2645, 2840, 2842, 2856]
@@ -803,7 +828,8 @@ function format_baseline() {
 //    console.log(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
 //    next_layer_checker(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
 
-    for (var i = 0; i < csv_data_array.length; i++) {
+    // NODES ARE CREATED HERE
+    for (var i = 0; i < 100; i++) {
         if (!(array_contains(i, error_feat_list))) {
             create_dependencies(csv_data_array[i])
         }
@@ -943,6 +969,7 @@ function drag_end() {
 // console.log(nodes)
 
 // Function that slices prerequisite feats and returns and array of formatted feats
+// Also works for skills and general PR field
 function parsefeats(d) {
     // Input must be a string
     if(typeof(d) != "string") { return -1; }
@@ -952,6 +979,9 @@ function parsefeats(d) {
 
     // Replace pipes with commas (TODO: Make this visual), THIS DOESN'T WORK
     d.replace(/\|/g, ",")
+
+    // Remove some other unused characters
+    d.replace(/\*/g, "")  // * used to indicate notes in the webpage
 
     // Split array by commas
     var feat_array = d.split(",")
@@ -980,16 +1010,144 @@ function parsefeats(d) {
 
 // TOOLTIP STUFF HERE: Uses the d3-tip library extension that mimics d3-v3's tooltip functionality
 
+// TODO: Total PR (Including Feats and non-feats) function
+    // Feats
+    // Classes + Levels
+    // Skills + Levels
+    // Ability Scores + Levels
+    // Traits
+    // BAB
+    // Races
+    // "Misc": Which won't be filterable
+
+function total_PR_tokens(data) {
+    var tmp_dev_mode = true;
+
+    if (tmp_dev_mode) console.log("<-----------------total_PR_tokens----------------->")
+
+    var data_obj = anything_to_feat_object(data);
+
+    console.log(data)
+    console.log(data_obj)
+
+    var feat_tokens = list_total_PR(data_obj)
+    var skill_tokens = parsefeats(data_obj.prerequisite_skills)
+    var mixed_PR_tokens = parsefeats(data_obj.prerequisites)
+
+    console.log("FEATS")
+    console.log(feat_tokens)
+    console.log("SKILLS")
+    console.log(skill_tokens)
+    console.log("BOTH")
+    console.log(mixed_PR_tokens)
+
+    var return_structure = {
+        name: data_obj.name,
+        feats: ((typeof(feat_tokens) == "object") ? feat_tokens.slice() : []),
+        skills: ((typeof(skill_tokens) == "object") ? skill_tokens.slice() : []),
+        abilities: [],
+        traits: [],
+        BAB: [],
+        races: [],
+        misc: []  // Caster level, 
+    }
+
+    var abilities_str = ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
+
+    // Remove feats_tokens and skill_tokens from mixed_PR_tokens
+    var feat_tokens  = list_total_PR(data_obj)
+    var skill_tokens = parsefeats(data_obj.prerequisite_skills)
+
+    tmp_length = mixed_PR_tokens.length
+    for(var i = 0; i < tmp_length; i++) {
+        // Check if this is a feat or skill
+        if (array_contains(mixed_PR_tokens[i], feat_tokens) || array_contains(mixed_PR_tokens[i], skill_tokens)) {
+            mixed_PR_tokens.splice(i, 1)
+            i--;
+            tmp_length--;
+        }
+    }
+    
+/*
+    for(var i = 0; i < mixed_PR_tokens; i++) {
+
+       // Check if BAB!
+       if (mixed_PR_tokens[i].slice(0, 17) == "base attack bonus") {
+            
+            
+       }
+       
+       // Check if it is an ability score!
+       else if (array_contains(mixed_PR_tokens[i].slice(0, 3), abilities_str) {
+
+       }
+
+    }
+*/
+
+
+    if (tmp_dev_mode == false) {
+
+        console.log("FEATS")
+        console.log(feat_tokens)
+        console.log("SKILLS")
+        console.log(skill_tokens)
+        console.log("BOTH")
+        console.log(mixed_PR_tokens)
+        console.log("RETURN STRUCTURE")
+        console.log(return_structure)
+
+        console.log("<---------------total_PR_tokens END--------------->")
+
+    }
+
+
+    return return_structure;
+}
+
+// Input: Array of values to be iterated through and give colors of stuff
+function tip_return_val(data) {
+
+    var data_obj = anything_to_feat_object(data);
+
+    // var return_str = "<span style = 'color:Red'> NAME: </style>" + data_obj.name + "<br>";
+    var return_str = "";
+
+    // Use total_PR_tokens to get tokens nicely separated
+    var token_struct = total_PR_tokens(data_obj)
+
+    // Use token_struct to fill return_str
+
+
+        
+
+    return return_str;
+}
+
 var node_tooltip = d3.tip()
     .attr("class", "d3-tip")
+    .attr("id", "d3-tip")
     .offset([-8, 0])
+    //.style("width", "300px") // TODO: Figure out why this doesn't work
     .html(function(d) { 
-        console.log("----------------TOOLTIP---------------")
-        console.log(d)
-        console.log("Feat ID: " + nodeID_to_featID_map.get(d.index))
-        console.log("FEAT NAME: " + featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)))
-        console.log("----------------TOOLTIP_END-----------")
-        return featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)); 
+        var tmp_dev_mode = true;
+
+        if (tmp_dev_mode) {
+            console.log("----------------TOOLTIP---------------")
+            console.log(d)
+            console.log("Feat ID: " + nodeID_to_featID_map.get(d.index))
+            console.log("FEAT NAME: " + featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)))
+        }
+
+        // TODO: Move to return section
+        tip_return_val(nodeID_to_featID_map.get(d.index));
+
+        if (tmp_dev_mode) console.log("----------------TOOLTIP_END-----------")
+
+        return ("Name: <span style ='color:red'>" + featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)) + "</span><br>" +
+                "Foo: " + 17 + "<br>" +
+                "Bar: " + 'abc');
+
     })
 
 svg.call(node_tooltip)
