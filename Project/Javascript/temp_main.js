@@ -36,8 +36,8 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
 
     format_baseline()
 
+/*
     // TODO: Remove this, purely used for skill testing
-
     var tmp_cnt_array123 = [];
     var tmp_cnt_array456 = [];
     console.log("<SKILLS HERE ---------------------------->")
@@ -59,6 +59,7 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
     console.log(tmp_cnt_array123)
     console.log(tmp_cnt_array456.length)
     console.log(tmp_cnt_array456)
+*/
 
 });
 
@@ -67,6 +68,14 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
 // This was fixed by manually editing the csv file, this function was used to point which ones needed fixing
 function format_csv_data_array() {
     console.log("------------------->>>> Formatting")
+
+    // Fill keymap
+    csv_data_array.forEach(function(element, index) {
+
+        // Fill string to featID keymap
+        featString_to_featID_map.set(element.name, index)
+        featID_to_stringID_map.set(index, element.name)
+    })
 
     var cnt = 0;
     var tmp_pre_r_array;
@@ -112,6 +121,119 @@ function format_csv_data_array() {
         // Remove confusing ID tags from dataset
         csv_data_array[x].id = x;
     }
+
+    console.log(csv_data_array)
+
+    // Formatting part 2: Adding BAB attribute to each data entry
+
+
+    console.log("WORKING HERE")
+    console.log("WORKING HERE")
+    console.log("WORKING HERE")
+
+    var feat_tokens = []
+    var skill_tokens = []
+    var race_tokens = []
+    var mixed_PR_tokens = []
+    var tmp_length = 0
+
+    for (var i = 0; i < csv_data_array.length; i++) {
+
+        csv_data_array[i].prerequisite_bab = 0
+        csv_data_array[i].prerequisite_abilities = [];
+        csv_data_array[i].prerequisite_misc = [];
+
+        feat_tokens = list_total_PR(csv_data_array[i])
+        skill_tokens = parsefeats(csv_data_array[i].prerequisite_skills)
+        race_tokens = parsefeats(csv_data_array[i].race_name)
+        mixed_PR_tokens = parsefeats(csv_data_array[i].prerequisites)
+
+        console.log("i: " + i)
+        console.log(mixed_PR_tokens)
+
+        var tmp_length = 0;
+
+        // Add BAB and ability score fields to csv_data_array
+        if(Array.isArray(mixed_PR_tokens)) {
+            tmp_length = mixed_PR_tokens.length;
+            var insanity_check = 0;
+            for (var n = 0; n < tmp_length; n++) {
+                console.log("\tn: " + n)
+                console.log("\tToken: >>" + mixed_PR_tokens[n] + "<<")
+
+                if (mixed_PR_tokens[n].slice(0,17) == "base attack bonus") {
+                    csv_data_array[i].prerequisite_bab = Number(mixed_PR_tokens[n].slice(19))
+                    console.log("\t\tFound a BAB! -> " + csv_data_array[i].prerequisite_bab)
+                    console.log("\t\tBAB From -> " + mixed_PR_tokens[n])
+                    mixed_PR_tokens.splice(n, 1)
+                    n--;
+                    tmp_length--;
+                }
+                else if(array_contains(mixed_PR_tokens[n].slice(0, 3), abilities_str)) {
+                    csv_data_array[i].prerequisite_abilities.push(array_contains(mixed_PR_tokens[n]))
+                    console.log("\t\tFound an attribute! ->>" + mixed_PR_tokens[n] + "<<")
+                    mixed_PR_tokens.splice(n, 1)
+                    n--;
+                    tmp_length--;
+                }
+                insanity_check++
+                if(insanity_check > 20) break;
+            }
+        }
+
+        tmp_length = mixed_PR_tokens.length
+        for(var n = 0; n < tmp_length; n++) {
+            // Check if this is a feat, skill or race (Can't be an attribute or BAB, those were already removed)
+            if (array_contains(mixed_PR_tokens[n], feat_tokens) ||
+                array_contains(mixed_PR_tokens[n], skill_tokens) ||
+                array_contains(mixed_PR_tokens[n], race_tokens)) {
+                mixed_PR_tokens.splice(i, 1)
+                n--;
+                tmp_length--;
+            }
+        }
+
+    }
+
+
+
+
+
+/*
+    // Remove feats_tokens and skill_tokens from mixed_PR_tokens
+    var tmp_length = mixed_PR_tokens.length
+    for(var i = 0; i < tmp_length; i++) {
+        // Check if this is a feat or skill
+        if (array_contains(mixed_PR_tokens[i], feat_tokens) ||
+            array_contains(mixed_PR_tokens[i], skill_tokens) ||
+            array_contains(mixed_PR_tokens[i], race_tokens)) {
+            mixed_PR_tokens.splice(i, 1)
+            i--;
+            tmp_length--;
+        }
+    }
+
+    console.log("MIXED (After filtering)")
+    console.log(mixed_PR_tokens)
+
+    // Fill abilities, BAB, and misc sections using condensed mixed_PR_tokens
+    
+    for(var i = 0; i < mixed_PR_tokens; i++) {
+
+       // Check if BAB!
+       if (mixed_PR_tokens[i].slice(0, 17) == "base attack bonus") {
+            
+            
+       }
+       
+       // Check if it is an ability score!
+       else if (array_contains(mixed_PR_tokens[i].slice(0, 3), abilities_str)) {
+
+       }
+
+    }
+*/
+
 
     console.log(csv_data_array)
 
@@ -623,6 +745,11 @@ function PR_layers_fn(data) {
             // For every feat on this layer
             for (var i = 0; i < PR_layers[layer].length; i++) {
                 // Directly access array of prerequisite feats from the string name of the feat
+
+                console.log("ERROR HERE")
+                console.log(PR_layers[layer][i])
+                console.log(featString_to_featID_map.get(PR_layers[layer][i]))
+
                 temp_PR_feats = parsefeats(csv_data_array[featString_to_featID_map.get(PR_layers[layer][i])].prerequisite_feats)
 
                 // Add those feats directly to next layer, ignoring any duplicates
@@ -807,14 +934,6 @@ function format_baseline() {
     var yay2 = 0;
     var nay2 = 0;
 
-    // Fill keymap
-    csv_data_array.forEach(function(element, index) {
-
-        // Fill string to featID keymap
-        featString_to_featID_map.set(element.name, index)
-        featID_to_stringID_map.set(index, element.name)
-    })
-
 //    console.log("TESTING CREATION WITH: ")
 //    var test_val_TO_DELETE = 2794
 //    console.log(csv_data_array[test_val_TO_DELETE])
@@ -829,7 +948,7 @@ function format_baseline() {
 //    next_layer_checker(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
 
     // NODES ARE CREATED HERE
-    for (var i = 0; i < 100; i++) {
+    for (var i = 250; i < 300; i++) {
         if (!(array_contains(i, error_feat_list))) {
             create_dependencies(csv_data_array[i])
         }
@@ -977,11 +1096,15 @@ function parsefeats(d) {
     // No prerequisite feats, return 0
     if (d == "") { return 0; } 
 
-    // Replace pipes with commas (TODO: Make this visual), THIS DOESN'T WORK
+    // Replace pipes with commas
     d.replace(/\|/g, ",")
+
+    // Replace semi-colons with commas
+    d.replace(/\;/g, ",")
 
     // Remove some other unused characters
     d.replace(/\*/g, "")  // * used to indicate notes in the webpage
+    d.replace(/\./g, "")  // * used to indicate notes in the webpage
 
     // Split array by commas
     var feat_array = d.split(",")
@@ -1020,6 +1143,8 @@ function parsefeats(d) {
     // Races
     // "Misc": Which won't be filterable
 
+var abilities_str = ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
+
 function total_PR_tokens(data) {
     var tmp_dev_mode = true;
 
@@ -1027,48 +1152,52 @@ function total_PR_tokens(data) {
 
     var data_obj = anything_to_feat_object(data);
 
+    console.log("Input -> Fetched")
     console.log(data)
     console.log(data_obj)
 
     var feat_tokens = list_total_PR(data_obj)
     var skill_tokens = parsefeats(data_obj.prerequisite_skills)
+    var race_tokens = parsefeats(data_obj.race_name)
     var mixed_PR_tokens = parsefeats(data_obj.prerequisites)
 
     console.log("FEATS")
     console.log(feat_tokens)
     console.log("SKILLS")
     console.log(skill_tokens)
-    console.log("BOTH")
+    console.log("RACES")
+    console.log(race_tokens)
+    console.log("MIXED")
     console.log(mixed_PR_tokens)
 
     var return_structure = {
         name: data_obj.name,
         feats: ((typeof(feat_tokens) == "object") ? feat_tokens.slice() : []),
         skills: ((typeof(skill_tokens) == "object") ? skill_tokens.slice() : []),
-        abilities: [],
-        traits: [],
         BAB: [],
-        races: [],
+        abilities: [],
+        races: ((typeof(race_tokens) == "object") ? race_tokens.slice() : []),
         misc: []  // Caster level, 
     }
 
-    var abilities_str = ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
-
     // Remove feats_tokens and skill_tokens from mixed_PR_tokens
-    var feat_tokens  = list_total_PR(data_obj)
-    var skill_tokens = parsefeats(data_obj.prerequisite_skills)
-
     tmp_length = mixed_PR_tokens.length
     for(var i = 0; i < tmp_length; i++) {
         // Check if this is a feat or skill
-        if (array_contains(mixed_PR_tokens[i], feat_tokens) || array_contains(mixed_PR_tokens[i], skill_tokens)) {
+        if (array_contains(mixed_PR_tokens[i], feat_tokens) ||
+            array_contains(mixed_PR_tokens[i], skill_tokens) ||
+            array_contains(mixed_PR_tokens[i], race_tokens)) {
             mixed_PR_tokens.splice(i, 1)
             i--;
             tmp_length--;
         }
     }
+
+    console.log("MIXED (After filtering)")
+    console.log(mixed_PR_tokens)
+
+    // Fill abilities, BAB, and misc sections using condensed mixed_PR_tokens
     
-/*
     for(var i = 0; i < mixed_PR_tokens; i++) {
 
        // Check if BAB!
@@ -1078,13 +1207,11 @@ function total_PR_tokens(data) {
        }
        
        // Check if it is an ability score!
-       else if (array_contains(mixed_PR_tokens[i].slice(0, 3), abilities_str) {
+       else if (array_contains(mixed_PR_tokens[i].slice(0, 3), abilities_str)) {
 
        }
 
     }
-*/
-
 
     if (tmp_dev_mode == false) {
 
@@ -1096,6 +1223,9 @@ function total_PR_tokens(data) {
         console.log(mixed_PR_tokens)
         console.log("RETURN STRUCTURE")
         console.log(return_structure)
+
+
+
 
         console.log("<---------------total_PR_tokens END--------------->")
 
