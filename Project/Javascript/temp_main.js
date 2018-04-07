@@ -1,20 +1,52 @@
-// TEMP MAIN
-
-// Quick array sum methods
-
-function add(x, y) { return x + y; }
-
-var length_array = new Array(16).fill(0)
+// Main!
 
 var width = 4500;
 var height = 3000;
 var link_distance_metric = 600;
 
+var abilities_str = ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
+
+var tip_words = ["Ability Scores: ", "Skills: ", "Race: ", "Misc: "]
+var tip_colors = ["blue", "brown", "violet", "black"]
+
+var feat_categories = [ { name: "Root",
+                          render: false }, // Always false to avoid throwing things off
+                        { name: "General",
+                          render: true },
+                        { name: "Combat",
+                          render: true },
+                        { name: "Mythic",
+                          render: true },
+                        { name: "Metamagic",
+                          render: true },
+                        { name: "Story",
+                          render: true },
+                        { name: "Monster",
+                          render: true },
+                        { name: "Item Creation",
+                          render: true },
+                        { name: "Other",
+                          render: true } ]
+
+// Initialized to all of them
+var modular_feat_categories = [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+
+var algebra_angle;
+var algebra_hyp;
+
+// Number of categories, excluding root
+var num_categories = feat_categories.length - 1
+var modular_num_categories = feat_categories.length - 1
+var middle_link_distance_metric = link_distance_metric
+
+var csv_data_array;
+
+var nodes = []
+var links = []
+
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
-
-var csv_data_array;
 
 // Read in data and work with it
 // NOTE: Will have to convert data
@@ -23,43 +55,11 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
 
     var pre_req_cnt = 0;
 
-    for (var x = 0; x < data.length; x++) {
-        if (data[x].prerequisite_feats != "") 
-        {
-            pre_req_cnt++;
-            length_array[data[x].prerequisite_feats.split(",").length]++
-        }
-        else length_array[0]++
-    }
-
     format_csv_data_array()
 
     format_baseline()
 
-/*
-    // TODO: Remove this, purely used for skill testing
-    var tmp_cnt_array123 = [];
-    var tmp_cnt_array456 = [];
-    console.log("<SKILLS HERE ---------------------------->")
-
-    for (var i = 0; i < csv_data_array.length; i++) {
-        if(csv_data_array[i].prerequisite_skills != "") { 
-            tmp_cnt_array123.push(i)
-            console.log(i)
-            console.log(csv_data_array[i].prerequisite_skills)
-
-            if(csv_data_array[i].prerequisite_skills.includes("|")) {
-                tmp_cnt_array456.push(i)
-            }
-        }
-    }
-
-    console.log("<SKILLS HERE ---------------------------- END>")
-    console.log(tmp_cnt_array123.length)
-    console.log(tmp_cnt_array123)
-    console.log(tmp_cnt_array456.length)
-    console.log(tmp_cnt_array456)
-*/
+    svg.call(node_tooltip)
 
 });
 
@@ -71,7 +71,6 @@ function format_csv_data_array() {
 
     // Fill keymap
     csv_data_array.forEach(function(element, index) {
-
         // Fill string to featID keymap
         featString_to_featID_map.set(element.name, index)
         featID_to_stringID_map.set(index, element.name)
@@ -224,82 +223,104 @@ function format_csv_data_array() {
     console.log("--------------->>>> Formatting END: " + cnt)
 }
 
-var abilities_str = ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
-
-// Create Fake ENUM for each type of feat
-var JS_ENUM = ({"Root": 0,
-                "General": 1,
-                "Combat": 2,
-                "Mythic": 3,
-                "Metamagic": 4,
-                "Story": 5,
-                "Monster": 6,
-                "Other": 7,
-                "Item Creation": 8 })
-
-Object.freeze(JS_ENUM)
-
-var num_categories = Object.keys(JS_ENUM).length - 1;
-
-var algebra_angle = Math.PI/num_categories
-var algebra_hyp = 2*link_distance_metric*Math.sin(algebra_angle)
-
 function compute_X(input) {
-    return (Math.sin(2*Math.PI*(input/num_categories))*link_distance_metric)
+    return (Math.sin(2*Math.PI*(input/(modular_num_categories)))*middle_link_distance_metric)
 }
 
 function compute_Y(input) {
-    return -(Math.cos(2*Math.PI*(input/num_categories))*link_distance_metric)
+    return -(Math.cos(2*Math.PI*(input/(modular_num_categories)))*middle_link_distance_metric)
 }
 
-// Creates root and named feat types
-var nodes = d3.range(num_categories+1).map(function(i) {
-    if (i==0) {
-        return {
-            index: i,
-            fx: width/2,
-            fy: height/2,
-            r: 30
-        };
-    }
-    else {
-        return {
-            index: i,
-            fx: width/2 + compute_X(i-1),
-            fy: height/2 + compute_Y(i-1),
-            r: 20
-        };
-    }
-});
+// Input: Array of categories (1 or 0 to indicate rendering)
+function initialize_central_nodes() {
 
-// Link base types for feats to root!
-var links = d3.range(num_categories+1).map(function(i) {
-    return {
-        source: 0,
-        target: i   // Directly encode color of root
-    };
-});
+    modular_num_categories = 0;
 
-links.shift();
+    for (var i = 0; i < feat_categories.length; i++) {
+        if (feat_categories[i].render == true) modular_num_categories++;
+    }
 
-for (var i = 1; i < num_categories + 1; i++) {
-    if (i < num_categories ) {
-        links.push( {
-            source: i,
-            target: i+1,
-            type: i   // Directly encode color of root
-        })
+    algebra_angle = (Math.PI/modular_num_categories)
+    algebra_hyp = 2*middle_link_distance_metric*Math.sin(algebra_angle)
+
+    nodes.push({ index: i,
+                   fx: width/2,
+                   fy: height/2,
+                   r: 30})
+
+    var modular_i = 0
+
+    var node_cache = []
+    var node_cache2 = []
+
+    console.log(feat_categories)
+
+    // Render category nodes that are set to be rendered, otherwise render them offscreen
+    for (var i = 0; i < modular_num_categories; i++) {
+
+/*
+        nodes.push({ index: nodes.length,
+         fx: width/2 + compute_X(i),
+         fy: height/2 + compute_Y(i),
+         r: 20 })
+*/
+        console.log("test")
+        console.log(feat_categories[i].render)
+
+        if(feat_categories[i].render == true) {
+            console.log("FOO")
+
+            node_cache.push(nodes.length)
+
+            nodes.push({ index: nodes.length,
+                     fx: width/2 + compute_X(modular_i),
+                     fy: height/2 + compute_Y(modular_i),
+                     r: 20 })
+
+            modular_i++;
+        }
+        else {
+            console.log("BAR")
+
+            node_cache2.push(nodes.length)
+
+            nodes.push({ index: nodes.length,
+                     fx: -50,
+                     fy: -50,
+                     r: 20 })
+
+        }
+
     }
-    else {
-        links.push( {
-            source: i,
-            target: 1,
-            type: i   // Directly encode color of root nodes for each type
-        })
+
+    console.log("NODE CACHES HERE")
+    console.log(node_cache)
+    console.log(node_cache2)
+
+    for (var i = 0; i < modular_num_categories; i++) {
+        links.push({ source: 0,
+                     target: i+1})
     }
+
+    for (var i = 1; i < modular_num_categories + 1; i++) {
+        if (i < modular_num_categories ) {
+            links.push( {
+                source: i,
+                target: i+1,
+                type: i
+            })
+        }
+        else {
+            links.push( {
+                source: i,
+                target: 1,
+                type: i
+            })
+        }
+    } 
 }
 
-// These two functions from Mike Bostock
+// These two functions from Mike Bostock (Main D3 Developer)
 function drawLink(d, i) {
     canvasContext.moveTo(d.source.x, d.source.y);
     canvasContext.lineTo(d.target.x, d.target.y);
@@ -345,12 +366,12 @@ function feat_type_to_color(type) {
             return 'Pink' 
             break;
         case 7:
-        case 'Other':
-            return 'Grey' 
-            break;
-        case 8:
         case 'Item Creation':
             return 'Brown' 
+            break;
+        case 8:
+        case 'Other':
+            return 'Grey' 
             break;
         default:
             console.log("INVALID Type: " + type)
@@ -382,10 +403,10 @@ function feat_type_to_number(type) {
         case 'Monster':
             return 6
             break;
-        case 'Other':
+        case 'Item Creation':
             return 7
             break;
-        case 'Item Creation':
+        case 'Other':
             return 8
             break;
         default:
@@ -404,17 +425,21 @@ var featID_to_stringID_map = new Map();
 var featID_to_NodeID_map = new Map();   // Will list ALL nodes associated with a given feat
 var nodeID_to_featID_map = new Map();
 var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node associated with a given feat
-//var MAIN_nodeID_to_featID_map = new Map();
 
 // TODO: Write input/output information here
 function create_dependencies(data) {
     var dev_mode_tmp = false;
+
+
 
     if (dev_mode_tmp) console.log("---------------------CREATE DEPENDANCEIS---------------------")
 
     // TODO: Error checking that the input node is valid
 
     var data_obj = anything_to_feat_object(data);
+
+    // If the render function for this type is off, return immediately.
+    if(!feat_categories[feat_type_to_number(data_obj.type)].render) return;
 
     var feat_type = feat_type_to_number(data_obj.type)
 
@@ -459,7 +484,7 @@ function create_dependencies(data) {
         }   
     }
 
-    // Decrement layer because it incremented beyond maximum layer in previous for loop
+    // Decrement layer counter because it incremented beyond maximum layer in previous for loop
     layer--;
 
     // Create links starting from the highest layer and going to 0
@@ -479,8 +504,6 @@ function create_dependencies(data) {
             target: node_cache[layer][i]
         })
     }
-
-    var testing_links = []
 
     // For each layer (working backwards)
     for ( ; layer >= 0; layer--) {
@@ -524,11 +547,8 @@ function create_dependencies(data) {
     }
 
     if (dev_mode_tmp) {
-        console.log("Testing 'list_total_explicity_implicit_PR' with Monkey Shine")
-        console.log(list_total_explicity_implicit_PR(500))
-
-        console.log("testing_links")
-        console.log(testing_links)
+        console.log("Testing: " + data_obj.name)
+        console.log(list_total_explicity_implicit_PR(data_obj))
 
         console.log("-------------------END CREATE DEPENDANCEIS-------------------")
     }
@@ -581,7 +601,10 @@ function next_layer_checker(input_array) {
             }
 
             if (push_flag) {
-                next_layer_array.push(total_EI_PR_array[i].explicit_prerequisites_STR[n])
+                // Only actually push if this has not already been added to the array (To avoid duplicates)
+                if(!array_contains(total_EI_PR_array[i].explicit_prerequisites_STR[n], next_layer_array)) {
+                    next_layer_array.push(total_EI_PR_array[i].explicit_prerequisites_STR[n])
+                }
             }
         }
     }
@@ -865,49 +888,89 @@ function list_total_explicity_implicit_PR(data) {
     return return_structure
 }
 
-var link_strength = 0.8
+
+/* New Modular Rendering Function:
+    Input 1: Mode of operation
+        0: Render Categories (Including rerendering the central node)
+            Input 2: Array of Categories to render
+        1: Render an array of feats (On default central creation)
+            Input 2: Array of Feats to render
+        2: Render an array of feats from within specific categories
+            Input 2: Array of Categories to render
+            Input 3: Array of feats to render
+
+*/
+
+function modular_render(d1, d2, d3) {
+    // Stop simulation?
+    simulation.stop()
+
+    if (d1 == 0) {  // Render Categories Mode
+
+        // Clear existing links and svg canvas
+        nodes = []
+        links = []
+
+        // Clear existing svg canvas?
+
+
+
+    }
+    else if (d1 == 1) { // Render node mode
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//var link_strength = 0.8
+var link_strength = 0.6
+var link_distance_metric = 75
 
 function format_baseline() {
+
+    initialize_central_nodes();
+
     var yay1 = 0;
     var nay1 = 0;
 
     var yay2 = 0;
     var nay2 = 0;
 
-//    console.log("TESTING CREATION WITH: ")
-//    var test_val_TO_DELETE = 2794
-//    console.log(csv_data_array[test_val_TO_DELETE])
-//    create_dependencies(csv_data_array[test_val_TO_DELETE])
-
-//    console.log("TESTING 'next_layer_checker' CREATION WITH:")
-//    console.log(csv_data_array[test_val_TO_DELETE])
-//    next_layer_checker(csv_data_array[test_val_TO_DELETE])
-
-//    console.log("TESTING 'next_layer_checker' CREATION WITH:")
-//    console.log(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
-//    next_layer_checker(list_total_explicity_implicit_PR(csv_data_array[test_val_TO_DELETE]).explicit_prerequisites_STR)
-
     // NODES ARE CREATED HERE
-    // for (var i = 0; i < csv_data_array.length; i++) {
-    for (var i = 250; i < 300; i++) {
-        create_dependencies(csv_data_array[i])
+    //for (var i = 0; i < csv_data_array.length; i++) {
+    for (var i = 400; i < 500; i++) {
+        // create_dependencies(csv_data_array[i])
+        if (csv_data_array[i].prerequisite_feats != "") create_dependencies(csv_data_array[i])
     }
 
     // Set links
-
     console.log("NODES HERE")
     console.log(nodes)
     console.log("LINKS HERE")
     console.log(links)
 
-    // This should be the same? (WEDNESDAY_1)
     simulation = d3.forceSimulation()
         .force("link", d3.forceLink()
             .strength(function(d) {
                 if (d.source.index == 0) {
                     return link_strength;
                 }
-                else if ((d.source.index < num_categories) && (d.target.index < num_categories)) {
+                else if ((d.source.index < modular_num_categories) && (d.target.index < modular_num_categories)) {
                     return link_strength;
                 }
                 return link_strength             
@@ -917,20 +980,34 @@ function format_baseline() {
                 if (d.source.index == 0) {
                     return link_distance_metric;
                 }
-                else if ((d.source.index <= num_categories) && (d.target.index <= num_categories)) {
+                else if ((d.source.index <= modular_num_categories) && (d.target.index <= modular_num_categories)) {
                     return (algebra_hyp)
                 }
                 // If they both have layers attached (Which they should), build link distance based off this
                 else if ((nodes[d.source.index].layer != -1) && (nodes[d.target.index].layer != -1)) {
                     // Distance of 50 for each link layer apart, this will generally be 50 --> TODO: Variable this, or build it off 'link_distance_metric'
-                    return Math.abs((nodes[d.source.index].layer - nodes[d.target.index].layer != -1))*100
+                    return Math.abs((nodes[d.source.index].layer - nodes[d.target.index].layer != -1))*link_distance_metric
                 }
                 return link_distance_metric;
             }))
-        .force("charge", d3.forceManyBody().strength(-100))
-        .force("x", d3.forceX(0))
-        .force("y", d3.forceY(0))
-        .force("center", d3.forceCenter(width / 2, height / 2));
+        .force("charge", d3.forceManyBody()
+            .strength(function(d) {
+                if(d.index == 0) { // Make middle ROOT act as a VERY repulsive gravity force
+                    return -10000
+                }
+                else if (d.index < modular_num_categories + 1) {
+                    return -1500 // Make each category node act as a somewhat resulive gravity force
+                }
+                else {
+                    return -25 // Give each feat some gravity to help with avoiding overlap
+                }
+            }))
+        //.force("x", d3.forceX(0))
+        //.force("y", d3.forceY(0))
+        //.force("center", d3.forceCenter().x(width*0.5).y(height*0.5))
+        //.force("repulsion", d3.forceManyBody().strength(-150))
+        .force("collision", d3.forceCollide().radius(12))
+        //.force("gravity", d3.forceManyBody(-250))
 
     // Set links between all nodes
     svg_links = svg.selectAll(".link")
@@ -939,6 +1016,8 @@ function format_baseline() {
         .attr("class", "link")
         .attr("stroke-width", 1)
         .attr("stroke", "black");
+
+    var tmp_i = 0;
 
     // Create nodes themselves with hover capacity
     svg_nodes = svg.selectAll(".node")
@@ -1021,10 +1100,6 @@ function drag_end() {
         d3.event.subject.fy = null;
     }
 }
-
-// console.log("<<<< LINKS THEN NODES >>>>")
-// console.log(links)
-// console.log(nodes)
 
 // Function that slices prerequisite feats and returns and array of formatted feats
 // Also works for skills and general PR field
@@ -1112,9 +1187,6 @@ function tip_return_val(data) {
 
     console.log(tmp_array[0])
 
-    var tip_words = ["Ability Scores: ", "Skills: ", "Race: ", "Misc.: "]
-    var tip_colors = ["blue", "brown", "violet", "grey"]
-
     for (var i = 0; i < tmp_array.length; i++) {
         if((tmp_array[i] != 0) && (tmp_array[i] != -1) && (tmp_array[i] != []) && (tmp_array[i] != undefined)) {
             return_str += ("<span style ='color:" + tip_colors[i] + "'>" + tip_words[i] + "</span>")
@@ -1131,12 +1203,9 @@ function tip_return_val(data) {
         }
     }
 
-    if (data_obj.prerequisite_bab != 0) {
+    if (data_obj.prerequisite_bab != 0 && data_obj.prerequisite_bab != undefined) {
         return_str += ("<span style ='color:green'>BAB: </span>" + data_obj.prerequisite_bab + "<br>")
     }
-
-/*
-*/
 
     return return_str;
 }
@@ -1156,21 +1225,15 @@ var node_tooltip = d3.tip()
             console.log("FEAT NAME: " + featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)))
         }
 
-        // TODO: Move to return section
-        //tip_return_val(nodeID_to_featID_map.get(d.index));
-
         if (tmp_dev_mode) console.log("----------------TOOLTIP_END-----------")
-/*
-        return ("Name: <span style ='color:red'>" + featID_to_stringID_map.get(nodeID_to_featID_map.get(d.index)) + "</span><br>" +
-                "Foo: " + 17 + "<br>" +
-                "Bar: " + 'abc');
-*/
 
-        console.log(tip_return_val(nodeID_to_featID_map.get(d.index)))
-
-        return tip_return_val(nodeID_to_featID_map.get(d.index));
+        // If this is within the central node
+        if(d.index <= num_categories) {
+            return ("<span style='color: red'>Feat Category: </span>" + feat_categories[d.index].name)
+        }
+        // Else this is a feat node
+        else {
+            return tip_return_val(nodeID_to_featID_map.get(d.index));
+        }
 
     })
-
-svg.call(node_tooltip)
-
