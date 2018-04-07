@@ -279,7 +279,7 @@ function initialize_central_nodes() {
 
             modular_i++;
         }
-        else {
+        else { // DEAR PAUL: THIS IS PUSHING TO THE ROOT!!!
             console.log("BAR")
 
             node_cache2.push(nodes.length)
