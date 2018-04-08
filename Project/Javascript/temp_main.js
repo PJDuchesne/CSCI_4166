@@ -2,7 +2,10 @@
 
 var width = 4500;
 var height = 3000;
-var link_distance_metric = 600;
+
+var link_strength = 0.6
+var link_distance_metric = 75
+var middle_link_distance_metric = link_distance_metric*8
 
 var abilities_str = ["Str", "Dex", "Con", "Int", "Wis", "Cha"]
 
@@ -28,16 +31,12 @@ var feat_categories = [ { name: "Root",
                         { name: "Other",
                           render: true } ]
 
-// Initialized to all of them
-var modular_feat_categories = [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-
 var algebra_angle;
 var algebra_hyp;
 
 // Number of categories, excluding root
 var num_categories = feat_categories.length - 1
 var modular_num_categories = feat_categories.length - 1
-var middle_link_distance_metric = link_distance_metric
 
 var csv_data_array;
 
@@ -231,93 +230,141 @@ function compute_Y(input) {
     return -(Math.cos(2*Math.PI*(input/(modular_num_categories)))*middle_link_distance_metric)
 }
 
+var central_node_cache = []
+
 // Input: Array of categories (1 or 0 to indicate rendering)
 function initialize_central_nodes() {
 
+    var dev_mode_tmp = true;
+
+    if (dev_mode_tmp) console.log("---------------------------initialize_central_nodes---------------------------")
+
     modular_num_categories = 0;
+    var category_node_r = 20
+    var root_node_r = 30
 
     for (var i = 0; i < feat_categories.length; i++) {
         if (feat_categories[i].render == true) modular_num_categories++;
     }
 
-    algebra_angle = (Math.PI/modular_num_categories)
-    algebra_hyp = 2*middle_link_distance_metric*Math.sin(algebra_angle)
+    if (modular_num_categories == 2) {
+        middle_link_distance_metric = link_distance_metric*4
+    }
+    else {
+        middle_link_distance_metric = link_distance_metric*8
+    }
 
-    nodes.push({ index: i,
-                   fx: width/2,
-                   fy: height/2,
-                   r: 30})
+    if (dev_mode_tmp) {
+        console.log("modular_num_categories: " + modular_num_categories)
+        console.log(middle_link_distance_metric)
+    }
+
+    // Initialize nodes with central root (TODO: Not do this if modular_num_categories == 1)
+
+    // Render central root node if at least 2 categories are being rendered, else render it offscreen
+    if (modular_num_categories > 1) {
+        nodes.push({ 
+            index: i,
+           fx: width/2,
+           fy: height/2,
+           r: 30
+        })
+        algebra_angle = (Math.PI/modular_num_categories)
+        algebra_hyp = 2*middle_link_distance_metric*Math.sin(algebra_angle)
+    }
+    else {
+        nodes.push({
+            index: nodes.length,
+            fx: -50,
+            fy: -50,
+            r: 30 
+        })
+        algebra_angle = 0
+        algebra_hyp = 0
+        category_node_r = root_node_r
+    }
 
     var modular_i = 0
 
-    var node_cache = []
-    var node_cache2 = []
+    central_node_cache = []
+    var node_cache2 = [] // For debugging (TODO: Remove from final)
 
-    console.log(feat_categories)
+    if (dev_mode_tmp) console.log(feat_categories)
 
     // Render category nodes that are set to be rendered, otherwise render them offscreen
-    for (var i = 0; i < modular_num_categories; i++) {
-
-/*
-        nodes.push({ index: nodes.length,
-         fx: width/2 + compute_X(i),
-         fy: height/2 + compute_Y(i),
-         r: 20 })
-*/
-        console.log("test")
-        console.log(feat_categories[i].render)
+    for (var i = 1; i < feat_categories.length; i++) {
 
         if(feat_categories[i].render == true) {
-            console.log("FOO")
+            central_node_cache.push(nodes.length)
 
-            node_cache.push(nodes.length)
-
-            nodes.push({ index: nodes.length,
-                     fx: width/2 + compute_X(modular_i),
-                     fy: height/2 + compute_Y(modular_i),
-                     r: 20 })
+            nodes.push({
+                index: nodes.length,
+                fx: width/2 + compute_X(modular_i),
+                fy: height/2 + compute_Y(modular_i),
+                r: category_node_r
+            })
 
             modular_i++;
         }
-        else { // DEAR PAUL: THIS IS PUSHING TO THE ROOT!!!
-            console.log("BAR")
-
+        else {
             node_cache2.push(nodes.length)
 
-            nodes.push({ index: nodes.length,
-                     fx: -50,
-                     fy: -50,
-                     r: 20 })
-
-        }
-
-    }
-
-    console.log("NODE CACHES HERE")
-    console.log(node_cache)
-    console.log(node_cache2)
-
-    for (var i = 0; i < modular_num_categories; i++) {
-        links.push({ source: 0,
-                     target: i+1})
-    }
-
-    for (var i = 1; i < modular_num_categories + 1; i++) {
-        if (i < modular_num_categories ) {
-            links.push( {
-                source: i,
-                target: i+1,
-                type: i
+            nodes.push({
+                index: nodes.length,
+                fx: -50,
+                fy: -50,
+                r: category_node_r 
             })
         }
-        else {
-            links.push( {
-                source: i,
-                target: 1,
-                type: i
-            })
-        }
-    } 
+    }
+
+    if (dev_mode_tmp) {
+        console.log("NODE CACHES HERE")
+        console.log(central_node_cache)
+        console.log(node_cache2)
+        console.log(modular_i)
+    }
+
+    // Link nodes!
+
+    // If only 1 category is being made, don't create any links
+    if (modular_num_categories == 1) return;
+
+    for (var i = 0; i < central_node_cache.length-1; i++) {
+        // Link all created nodes to center
+        links.push({ 
+            source: 0,
+            target: central_node_cache[i]
+        })
+
+        // Link nodes in a circle
+        links.push( {
+            source: central_node_cache[i],
+            target: central_node_cache[i+1], // This is the reason this must be done to length - 1
+        })
+    }
+
+    // Last link to center
+    links.push({
+        source: 0,
+        target: central_node_cache[central_node_cache.length-1]
+    })
+
+    // Close the circle
+    links.push({
+        source: central_node_cache[0],
+        target: central_node_cache[central_node_cache.length-1]
+    })
+
+    if (dev_mode_tmp) {
+        console.log("NODES HERE:")
+        console.log(nodes)
+        console.log("LINKS HERE:")
+        console.log(links)
+
+        console.log("-------------------------initialize_central_nodes END-------------------------")
+    }
+
 }
 
 // These two functions from Mike Bostock (Main D3 Developer)
@@ -331,7 +378,7 @@ function drawNode(d, i) {
     canvasContext.arc(d.x, d.y, 3, 0, 2 * Math.PI);
 }
 
-var simulation,
+var simulation = undefined,
 svg_nodes,
 svg_links;
 
@@ -375,7 +422,6 @@ function feat_type_to_color(type) {
             break;
         default:
             console.log("INVALID Type: " + type)
-            // while(1);
             break;
     }
 }
@@ -412,7 +458,6 @@ function feat_type_to_number(type) {
         default:
             console.log("INVALID Type: " + type)
             return -1;
-            // while(1);
             break;
     }
 }
@@ -429,8 +474,6 @@ var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node asso
 // TODO: Write input/output information here
 function create_dependencies(data) {
     var dev_mode_tmp = false;
-
-
 
     if (dev_mode_tmp) console.log("---------------------CREATE DEPENDANCEIS---------------------")
 
@@ -890,73 +933,99 @@ function list_total_explicity_implicit_PR(data) {
 
 
 /* New Modular Rendering Function:
-    Input 1: Mode of operation
-        0: Render Categories (Including rerendering the central node)
-            Input 2: Array of Categories to render
-        1: Render an array of feats (On default central creation)
-            Input 2: Array of Feats to render
-        2: Render an array of feats from within specific categories
-            Input 2: Array of Categories to render
-            Input 3: Array of feats to render
-
+    Input 1: Array of Categories to render (Including Root)
+    Input 2: Array of Feats to Render (Empty array to display all)
+        Note 1: If no feats are provided, all feats for the rendered categories will be rendered
+        Note 2: If feats are given from categories that are not set to be rendered, they will not be rendered
 */
 
-function modular_render(d1, d2, d3) {
-    // Stop simulation?
-    simulation.stop()
+function modular_render(input_1, input_2) {
 
-    if (d1 == 0) {  // Render Categories Mode
-
-        // Clear existing links and svg canvas
-        nodes = []
-        links = []
-
-        // Clear existing svg canvas?
-
-
-
-    }
-    else if (d1 == 1) { // Render node mode
-
+    if (typeof(input_1) != 'object') {
+        console.log("<modular_render> INPUT_1 TYPE ERROR : ")
+        console.log(typeof(input_1))
+        console.log(input_1)
+        return;
     }
 
+    if (input_1.length != feat_categories.length) {
+        console.log("<modular_render> INPUT_1 SIZE ERROR: ")
+        console.log(input_1.length)
+        console.log(input_1)
+        return;
+    }
+
+    if (typeof(input_2) != 'object'){
+        console.log("<modular_render> INPUT_2 ERROR: ")
+        console.log(input_2)
+        return;
+    }
+
+    // Stop simulation
+    if (simulation != undefined) simulation.stop()
+
+    // Clear svg canvas elements and reset nodes/links
+    svg.selectAll("*").remove();
+    nodes = []
+    links = []
+
+    // Deal with input_1 by setting up central node
+    for (var i = 1; i < feat_categories.length; i++) {
+        feat_categories[i].render = input_1[i]
+    }
+
+console.log("WORRIED HERE")
+    console.log(feat_categories)
+
+    initialize_central_nodes()
+
+    // Deal with input_2 by creating dependency trees
+
+    // If empty array supplied, render them all!
+    if (input_2 == []) {
+        for (var i = 0; i < csv_data_array.length; i++) {
+            create_dependencies(csv_data_array[i])
+        }
+    }
+    else { // Else, render the list provided
+        for (var i = 0; i < input_2.length; i++) {
+            create_dependencies(input_2[i])
+        }
+    }
 
 
+    // Start simulation back up
+
+    if (simulation != undefined) {
+        simulation
+            .nodes(nodes)
+            .on("tick", tick)
+
+        simulation.force("link")
+            .links(links)
+    }
 }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-//var link_strength = 0.8
-var link_strength = 0.6
-var link_distance_metric = 75
-
 function format_baseline() {
 
+    var default_render = [true, false, true, true, true, true, true, true, true]
+
+    var test_feats = csv_data_array.slice(500, 600)
+
+    modular_render(default_render, test_feats)
+
+/*
     initialize_central_nodes();
-
-    var yay1 = 0;
-    var nay1 = 0;
-
-    var yay2 = 0;
-    var nay2 = 0;
 
     // NODES ARE CREATED HERE
     //for (var i = 0; i < csv_data_array.length; i++) {
-    for (var i = 400; i < 500; i++) {
+    for (var i = 405; i < 505; i++) {
         // create_dependencies(csv_data_array[i])
         if (csv_data_array[i].prerequisite_feats != "") create_dependencies(csv_data_array[i])
     }
+*/
 
     // Set links
     console.log("NODES HERE")
@@ -1032,14 +1101,22 @@ function format_baseline() {
             .on("end", drag_end)
         );
 
+    var javascript_d3_index_error_flag =  (modular_num_categories == 1) ? true : false;
+
     svg_nodes.append("circle")
         .attr("r", function(d) { return d.r })
         .style("fill", function(d) {
+            if (!javascript_d3_index_error_flag) { 
+                javascript_d3_index_error_flag = true;
+                return feat_type_to_color(0);
+            }
             if (csv_data_array[nodeID_to_featID_map.get(d.index)] != undefined)
             {
                 return feat_type_to_color(csv_data_array[nodeID_to_featID_map.get(d.index)].type)
             }
-            else {
+            else { // Else these are the central nodes: their node number is equal to their type
+                console.log("FILLING:" + d.index)
+                console.log(feat_type_to_color(d.index))
                 return feat_type_to_color(d.index)
             }
         });
