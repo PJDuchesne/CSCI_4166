@@ -1,7 +1,9 @@
 // Main!
 
-var width = 4500;
-var height = 3000;
+// <<<<<<<<<<<<<<<<<<< SECTION BREAK: Globals >>>>>>>>>>>>>>>>>>>>>
+
+var width = 3500;
+var height = 3500;
 
 var link_strength = 0.6
 var link_distance_metric = 75
@@ -31,6 +33,10 @@ var feat_categories = [ { name: "Root",
                         { name: "Other",
                           render: true } ]
 
+var render_all = [true, true, true, true, true, true, true, true, true]
+
+var render_none = [false, false, false, false, false, false, false, false, false]
+
 var algebra_angle;
 var algebra_hyp;
 
@@ -38,10 +44,33 @@ var algebra_hyp;
 var num_categories = feat_categories.length - 1
 var modular_num_categories = feat_categories.length - 1
 
+var central_node_cache = []
+
 var csv_data_array;
 
 var nodes = []
 var links = []
+
+var simulation = undefined
+var svg_nodes
+var svg_links
+
+// Filled outright in format_baseline()
+var featString_to_featID_map = new Map();
+var featID_to_stringID_map = new Map();
+
+// Filled as nodes are created in create_dependencies()
+var nodeID_to_featID_map = new Map();
+var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node associated with a given feat
+
+/*
+var menu_width = 300
+var menu_height = 500
+
+var svg_menu = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+*/
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -61,6 +90,9 @@ d3.csv("/Data/pathfinder_feats.csv", function(data) {
     svg.call(node_tooltip)
 
 });
+
+
+// <<<<<<<<<<<<<<<<<<< SECTION BREAK: Helper Functions >>>>>>>>>>>>>>>>>>>>>
 
 // This originally found feats within the dataset whose prerequisites included itself
 // However, this was simply a higher tier of feats, Mythic, that requires the lesser version of itself
@@ -138,7 +170,7 @@ function format_csv_data_array() {
 
         csv_data_array[i].prerequisite_bab = 0
         csv_data_array[i].ability_tokens = [];
-        csv_data_array[i].prerequisite_misc = [];
+        csv_data_array[i].misc_tokens = [];
 
         if (dev_mode_tmp) {
             console.log("BIG HERE: i: " + i)
@@ -230,7 +262,87 @@ function compute_Y(input) {
     return -(Math.cos(2*Math.PI*(input/(modular_num_categories)))*middle_link_distance_metric)
 }
 
-var central_node_cache = []
+function feat_type_to_color(type) {
+    switch (type) {
+        case 0:
+        case 'Root':
+            return 'Black'
+            break;
+        case 1:
+        case 'General':
+            return 'Green' 
+            break;
+        case 2:
+        case 'Combat':
+            return 'Red' 
+            break;
+        case 3:
+        case 'Mythic':
+            return 'Gold' 
+            break;
+        case 4:
+        case 'Metamagic':
+            return 'Blue' 
+            break;
+        case 5:
+        case 'Story':
+            return 'Purple' 
+            break;
+        case 6:
+        case 'Monster':
+            return 'Pink' 
+            break;
+        case 7:
+        case 'Item Creation':
+            return 'Brown' 
+            break;
+        case 8:
+        case 'Other':
+            return 'Grey' 
+            break;
+        default:
+            console.log("INVALID Type: " + type)
+            break;
+    }
+}
+
+function feat_type_to_number(type) {
+    var upper_type = type.toUpperCase();
+    switch (upper_type) {
+        case 'ROOT':
+            return 0
+            break;
+        case 'GENERAL':
+            return 1 
+            break;
+        case 'COMBAT':
+            return 2
+            break;
+        case 'MYTHIC':
+            return 3
+            break;
+        case 'METAMAGIC':
+            return 4
+            break;
+        case 'STORY':
+            return 5
+            break;
+        case 'MONSTER':
+            return 6
+            break;
+        case 'ITEM CREATION':
+            return 7
+            break;
+        case 'OTHER':
+            return 8
+            break;
+        default:
+            console.log("INVALID Type: " + type)
+            console.log(upper_type)
+            return -1;
+            break;
+    }
+}
 
 // Input: Array of categories (1 or 0 to indicate rendering)
 function initialize_central_nodes() {
@@ -247,11 +359,16 @@ function initialize_central_nodes() {
         if (feat_categories[i].render == true) modular_num_categories++;
     }
 
-    if (modular_num_categories == 2) {
-        middle_link_distance_metric = link_distance_metric*4
-    }
-    else {
-        middle_link_distance_metric = link_distance_metric*8
+    switch (modular_num_categories) {
+        case 1:
+            middle_link_distance_metric = 0;
+            break;
+        case 2: 
+            middle_link_distance_metric = link_distance_metric*4
+            break;
+        default:
+            middle_link_distance_metric = link_distance_metric*8
+            break;
     }
 
     if (dev_mode_tmp) {
@@ -366,110 +483,6 @@ function initialize_central_nodes() {
     }
 
 }
-
-// These two functions from Mike Bostock (Main D3 Developer)
-function drawLink(d, i) {
-    canvasContext.moveTo(d.source.x, d.source.y);
-    canvasContext.lineTo(d.target.x, d.target.y);
-}
-
-function drawNode(d, i) {
-    canvasContext.moveTo(d.x + 3, d.y);
-    canvasContext.arc(d.x, d.y, 3, 0, 2 * Math.PI);
-}
-
-var simulation = undefined,
-svg_nodes,
-svg_links;
-
-function feat_type_to_color(type) {
-    switch (type) {
-        case 0:
-        case 'Root':
-            return 'Black'
-            break;
-        case 1:
-        case 'General':
-            return 'Green' 
-            break;
-        case 2:
-        case 'Combat':
-            return 'Red' 
-            break;
-        case 3:
-        case 'Mythic':
-            return 'Gold' 
-            break;
-        case 4:
-        case 'Metamagic':
-            return 'Blue' 
-            break;
-        case 5:
-        case 'Story':
-            return 'Purple' 
-            break;
-        case 6:
-        case 'Monster':
-            return 'Pink' 
-            break;
-        case 7:
-        case 'Item Creation':
-            return 'Brown' 
-            break;
-        case 8:
-        case 'Other':
-            return 'Grey' 
-            break;
-        default:
-            console.log("INVALID Type: " + type)
-            break;
-    }
-}
-
-function feat_type_to_number(type) {
-    switch (type) {
-        case 'Root':
-            return 0
-            break;
-        case 'General':
-            return 1 
-            break;
-        case 'Combat':
-            return 2
-            break;
-        case 'Mythic':
-            return 3
-            break;
-        case 'Metamagic':
-            return 4
-            break;
-        case 'Story':
-            return 5
-            break;
-        case 'Monster':
-            return 6
-            break;
-        case 'Item Creation':
-            return 7
-            break;
-        case 'Other':
-            return 8
-            break;
-        default:
-            console.log("INVALID Type: " + type)
-            return -1;
-            break;
-    }
-}
-
-// Filled outright in format_baseline()
-var featString_to_featID_map = new Map();
-var featID_to_stringID_map = new Map();
-
-// Filled as nodes are created in create_dependencies()
-var featID_to_NodeID_map = new Map();   // Will list ALL nodes associated with a given feat
-var nodeID_to_featID_map = new Map();
-var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node associated with a given feat
 
 // TODO: Write input/output information here
 function create_dependencies(data) {
@@ -689,7 +702,6 @@ function create_node(feat_id, layer, main, radius) {
     })
 
     // Fill keymap for that node
-        // featID_to_NodeID_map.set(featID_to_NodeID_map.size, nodes.length - 1) // TODO: Make this append to existing listing
     nodeID_to_featID_map.set(nodes.length - 1, feat_id)
     if (main) MAIN_featID_to_NodeID_map.set(feat_id, nodes.length - 1)    
 
@@ -931,60 +943,98 @@ function list_total_explicity_implicit_PR(data) {
     return return_structure
 }
 
+/* modular_render_one:
+    Input 1: feat string, name, or object
+    Output: Rerender the whole svg canvas with only that node visible
 
-/* New Modular Rendering Function:
+    Essentially zooms in on one node
+*/
+
+function modular_render_one(data) {
+
+    console.log("---------------------------modular_render_one---------------------------")
+
+    var data_obj = anything_to_feat_object(data);
+
+    console.log("Data")
+    console.log(data_obj)
+
+//    var render_array = [false, false, false, false, false, false, false, false, false]
+    var render_array = [false, false, false, false, false, false, false, false, false]
+
+    // Set only that type to render
+    render_array[feat_type_to_number(data_obj.type)] = true;
+
+    modular_render_many(render_array, [data_obj])
+
+    console.log("-------------------------modular_render_one end-------------------------")
+
+}
+
+/* modular_render_many:
     Input 1: Array of Categories to render (Including Root)
-    Input 2: Array of Feats to Render (Empty array to display all)
+    Input 2: Array of Feats to Render (Empty array to display all) -> Feats can be given as ID, string, or obj
         Note 1: If no feats are provided, all feats for the rendered categories will be rendered
         Note 2: If feats are given from categories that are not set to be rendered, they will not be rendered
 */
 
-function modular_render(input_1, input_2) {
+function modular_render_many(input_1, input_2) {
+
+    nodeID_to_featID_map = new Map();
+    MAIN_featID_to_NodeID_map = new Map();
+
+    console.log("---------------------------modular_render_many---------------------------")
 
     if (typeof(input_1) != 'object') {
-        console.log("<modular_render> INPUT_1 TYPE ERROR : ")
+        console.log("<modular_render_many> INPUT_1 TYPE ERROR : ")
         console.log(typeof(input_1))
         console.log(input_1)
         return;
     }
 
     if (input_1.length != feat_categories.length) {
-        console.log("<modular_render> INPUT_1 SIZE ERROR: ")
+        console.log("<modular_render_many> INPUT_1 SIZE ERROR: ")
         console.log(input_1.length)
         console.log(input_1)
         return;
     }
 
     if (typeof(input_2) != 'object'){
-        console.log("<modular_render> INPUT_2 ERROR: ")
+        console.log("<modular_render_many> INPUT_2 ERROR: ")
         console.log(input_2)
         return;
     }
 
-    // Stop simulation
-    if (simulation != undefined) simulation.stop()
+    console.log("FOO 1")
 
-    // Clear svg canvas elements and reset nodes/links
-    svg.selectAll("*").remove();
+    console.log("FOO 2")
+
+    // Clear nodes and links arrays
     nodes = []
     links = []
+
+    console.log("FOO 3")
 
     // Deal with input_1 by setting up central node
     for (var i = 1; i < feat_categories.length; i++) {
         feat_categories[i].render = input_1[i]
     }
 
-console.log("WORRIED HERE")
-    console.log(feat_categories)
+    console.log("FOO 4")
 
     initialize_central_nodes()
+
+    console.log("FOO 5")
 
     // Deal with input_2 by creating dependency trees
 
     // If empty array supplied, render them all!
-    if (input_2 == []) {
+        // Note: Feats with 0 prerequisites are not displayed to save space
+    if (input_2.length == 0) {
         for (var i = 0; i < csv_data_array.length; i++) {
-            create_dependencies(csv_data_array[i])
+            if (csv_data_array[i].prerequisite_feats != "") {
+                create_dependencies(csv_data_array[i])
+            }
         }
     }
     else { // Else, render the list provided
@@ -993,39 +1043,256 @@ console.log("WORRIED HERE")
         }
     }
 
-
-    // Start simulation back up
-
     if (simulation != undefined) {
-        simulation
-            .nodes(nodes)
-            .on("tick", tick)
 
-        simulation.force("link")
-            .links(links)
+        console.log(nodes)
+        console.log(links)
+
+        restart_display();
+
     }
+
+    console.log("FOO 6")
+
+    console.log("-------------------------modular_render_many END-------------------------")
+
 }
 
+// Input: input_structure {
+//     D feat_name: <string>  
+//     D race: { name:<string>, exclusive: <bool> }
+//       type: <string> // Just one type
+//     D range: {lower: <int>, upper: <int>}
+// }
+    // Note: for any attribute that is ignored, "-1" will be entered
+// Output: Array of feat IDs that match the search criteria
 
+function  search_fn(input_structure) {
+
+    console.log("INPUT STRUCTURE")
+    console.log(input_structure)
+    
+    // Array of values
+    var return_array = []
+
+    var tmp_val;
+    var lower_bound;
+    var upper_bound;
+
+    var bounds_flag = false;
+
+    // Apply bounding for all future looping
+    if (typeof(input_structure.range) == 'object') {
+        lower_bound = input_structure.range.lower
+        upper_bound = input_structure.range.upper
+    }
+    else {
+        lower_bound = 0
+        upper_bound = csv_data_array.length
+    }
+
+    // Check string
+    if (input_structure.feat_name != -1) {
+        bounds_flag = true;
+        if (typeof(input_structure.feat_name) == 'string') {
+
+            // put input feat name to upper
+            input_structure.feat_name = input_structure.feat_name.toUpperCase()
+
+            for (var i = lower_bound; i < upper_bound; i++) {
+                tmp_val = csv_data_array[i].name.toUpperCase();
+
+                if (tmp_val.includes(input_structure.feat_name)) {
+                    return_array.push(csv_data_array[i].name)
+                }
+            }
+        }
+        else {
+            console.log("<search> Input Error on feat_name: " + input_structure.feat_name)
+            return -1;
+        }
+    }
+
+    // Check Races
+    if (input_structure.race != -1) {
+        bounds_flag = true;
+        // Typecheck
+        if (typeof(input_structure.race) == 'object') {
+
+            // Set input race name to uppercase
+            input_structure.race.name = input_structure.race.name.toUpperCase()
+
+            for (var i = lower_bound; i < upper_bound; i++) {
+                // If no race is required for a feat, then only add if this is an inclusive search
+                if (csv_data_array[i].race_tokens.length == 0) {
+                    if (input_structure.race.exclusive == false) {
+                        // from here to the end of this search function, all values must be checked to avoid duplicates
+                        if (!array_contains(csv_data_array[i].name, return_array)) {
+                            return_array.push(csv_data_array[i].name)
+                        }
+                    }
+
+                    continue
+                }
+
+                console.log("foobar")
+
+                // Test if the race tokens themselves match the input race token
+                for (var n = 0; n < csv_data_array[i].race_tokens.length; n++) {
+                    tmp_val = csv_data_array[i].race_tokens[n].toUpperCase();
+
+                    if (input_structure.race.name == tmp_val) {
+                        if (!array_contains(csv_data_array[i].name, return_array)) {
+                            return_array.push(csv_data_array[i].name)
+                        }
+                        continue
+                    }
+                }
+            }
+        }
+        else {
+            console.log("<search> Input Error on race: >>" + typeof(input_structure.race) + "<<")
+            console.log(typeof(input_structure.race))
+            console.log(input_structure.race)
+            return -1;
+        }
+    }
+
+    // Check type
+    if (input_structure.type != -1) {
+        if (typeof(input_structure.type) == 'string') {
+            bounds_flag = true;
+
+            tmp_val = feat_type_to_number(input_structure.type)
+
+            if (tmp_val == -1) {
+                console.log("<search> Input Error on type: >>" + typeof(input_structure.type) + "<<")
+                console.log(typeof(input_structure.type))
+                console.log(input_structure.type)
+                return -1
+            }
+            
+            for (var i = lower_bound; i < upper_bound; i++) {
+                if (feat_type_to_number(csv_data_array[i].type) == tmp_val){
+                    if (!array_contains(csv_data_array[i].name, return_array)) {
+                            return_array.push(csv_data_array[i].name)
+                        }
+                }
+            }
+        }
+        else {
+            console.log("<search> Input Error on type: >>" + typeof(input_structure.type) + "<<")
+            console.log(typeof(input_structure.type))
+            console.log(input_structure.type)
+            return -1;
+        }
+    }
+
+    console.log(bounds_flag)
+    console.log(input_structure.range)
+
+    // If range was provided alone, simply return everything in that range
+    if (typeof(input_structure.range) == 'object') {
+        console.log("foobar")
+        if (bounds_flag == false ) {
+            console.log("foobar")
+            console.log(lower_bound)
+            console.log(upper_bound)
+            for (var i = lower_bound; i < upper_bound; i++) {
+                console.log("foobar")
+                return_array.push(csv_data_array[i].name)
+            }
+        }
+    }
+
+    return return_array
+}
+
+function restart_display() {
+
+    svg.selectAll("*").transition().duration(1000).style("opacity", 0).remove()
+
+    svg_links = svg.selectAll("link")
+        .data(links)
+        .enter().append("line")
+        .attr("class", "link")
+        .attr("stroke-width", 1)
+        .attr("stroke", "black");
+
+    svg_links.exit().remove()
+
+    svg_links.enter().append("line")
+        .attr("class", "link")
+        .attr("stroke-width", 1)
+        .attr("stroke", "black")
+        .merge(svg_links)
+
+    var javascript_d3_index_error_flag = (modular_num_categories == 1) ? true : false;
+
+    // Create nodes themselves with hover capacity
+    svg_nodes = svg.selectAll("node")
+        .data(nodes)
+        .enter().append("g")
+        .attr("class", "node")
+        .on("mouseover", node_tooltip.show)
+        .on("mouseout", node_tooltip.hide)
+        .on("click", function(d) { 
+            node_tooltip.hide() // Hide the tooltip which will otherwise get stuck because the object is deleted
+            console.log("data")
+            console.log(d)
+            if (d.index == 0) { // If the root is clicked on, render everything
+                modular_render_many(render_all, [])
+            }
+            else if (d.index <= num_categories) { // If one of the categories is clicked on, render everything from that category
+                render_none[d.index] = true
+                modular_render_many(render_none, [])
+                render_none[d.index] = false
+            }
+            else { // Otherwise, render individual node that was clicked on
+                modular_render_one(nodeID_to_featID_map.get(d.index))
+            }
+        })
+        .call(d3.drag()
+            .on("start", drag_start)
+            .on("drag", drag)
+            .on("end", drag_end)
+        )
+        .append("circle")
+        .attr("r", function(d) { return d.r })
+        .style("fill", function(d) {
+            if (!javascript_d3_index_error_flag) { 
+                javascript_d3_index_error_flag = true;
+                return feat_type_to_color(0);
+            }
+            if (csv_data_array[nodeID_to_featID_map.get(d.index)] != undefined)
+            {
+                return feat_type_to_color(csv_data_array[nodeID_to_featID_map.get(d.index)].type)
+            }
+            else { // Else these are the central nodes: their node number is equal to their type
+                return feat_type_to_color(d.index)
+            }
+        });
+
+    svg_nodes.exit().remove()
+
+    simulation
+        .nodes(nodes)
+        .on("tick", tick)
+
+    simulation.force("link")
+        .links(links)
+
+    simulation.alpha(0.8).restart()
+
+}
 
 function format_baseline() {
 
-    var default_render = [true, false, true, true, true, true, true, true, true]
+    var test_feats = csv_data_array.slice(100, 200)
 
-    var test_feats = csv_data_array.slice(500, 600)
+    console.log(test_feats)
 
-    modular_render(default_render, test_feats)
-
-/*
-    initialize_central_nodes();
-
-    // NODES ARE CREATED HERE
-    //for (var i = 0; i < csv_data_array.length; i++) {
-    for (var i = 405; i < 505; i++) {
-        // create_dependencies(csv_data_array[i])
-        if (csv_data_array[i].prerequisite_feats != "") create_dependencies(csv_data_array[i])
-    }
-*/
+    modular_render_many(render_all, test_feats)
 
     // Set links
     console.log("NODES HERE")
@@ -1039,24 +1306,28 @@ function format_baseline() {
                 if (d.source.index == 0) {
                     return link_strength;
                 }
-                else if ((d.source.index < modular_num_categories) && (d.target.index < modular_num_categories)) {
+                else if ((d.source.index < num_categories) && (d.target.index < num_categories)) {
                     return link_strength;
                 }
                 return link_strength             
 
             })
             .distance(function(d) {
+
                 if (d.source.index == 0) {
                     return link_distance_metric;
                 }
-                else if ((d.source.index <= modular_num_categories) && (d.target.index <= modular_num_categories)) {
+                else if ((d.source.index <= num_categories) && (d.target.index <= num_categories)) {
                     return (algebra_hyp)
                 }
                 // If they both have layers attached (Which they should), build link distance based off this
-                else if ((nodes[d.source.index].layer != -1) && (nodes[d.target.index].layer != -1)) {
-                    // Distance of 50 for each link layer apart, this will generally be 50 --> TODO: Variable this, or build it off 'link_distance_metric'
-                    return Math.abs((nodes[d.source.index].layer - nodes[d.target.index].layer != -1))*link_distance_metric
+                else if (nodes[d.source.index] != undefined && nodes[d.target.index] != undefined) {
+                    if ((nodes[d.source.index].layer != -1) && (nodes[d.target.index].layer != -1)) {
+                        // Distance of 50 for each link layer apart, this will generally be 50 --> TODO: Variable this, or build it off 'link_distance_metric'
+                        return Math.abs((nodes[d.source.index].layer - nodes[d.target.index].layer != -1))*link_distance_metric
+                    }
                 }
+                 
                 return link_distance_metric;
             }))
         .force("charge", d3.forceManyBody()
@@ -1064,69 +1335,16 @@ function format_baseline() {
                 if(d.index == 0) { // Make middle ROOT act as a VERY repulsive gravity force
                     return -10000
                 }
-                else if (d.index < modular_num_categories + 1) {
+                else if (d.index < num_categories + 1) {
                     return -1500 // Make each category node act as a somewhat resulive gravity force
                 }
                 else {
                     return -25 // Give each feat some gravity to help with avoiding overlap
                 }
             }))
-        //.force("x", d3.forceX(0))
-        //.force("y", d3.forceY(0))
-        //.force("center", d3.forceCenter().x(width*0.5).y(height*0.5))
-        //.force("repulsion", d3.forceManyBody().strength(-150))
         .force("collision", d3.forceCollide().radius(12))
-        //.force("gravity", d3.forceManyBody(-250))
 
-    // Set links between all nodes
-    svg_links = svg.selectAll(".link")
-        .data(links)
-        .enter().append("line")
-        .attr("class", "link")
-        .attr("stroke-width", 1)
-        .attr("stroke", "black");
-
-    var tmp_i = 0;
-
-    // Create nodes themselves with hover capacity
-    svg_nodes = svg.selectAll(".node")
-        .data(nodes)
-        .enter().append("g")
-        .attr("class", "node")
-        .on("mouseover", node_tooltip.show)
-        .on("mouseout", node_tooltip.hide)
-        .call(d3.drag()
-            .on("start", drag_start)
-            .on("drag", drag)
-            .on("end", drag_end)
-        );
-
-    var javascript_d3_index_error_flag =  (modular_num_categories == 1) ? true : false;
-
-    svg_nodes.append("circle")
-        .attr("r", function(d) { return d.r })
-        .style("fill", function(d) {
-            if (!javascript_d3_index_error_flag) { 
-                javascript_d3_index_error_flag = true;
-                return feat_type_to_color(0);
-            }
-            if (csv_data_array[nodeID_to_featID_map.get(d.index)] != undefined)
-            {
-                return feat_type_to_color(csv_data_array[nodeID_to_featID_map.get(d.index)].type)
-            }
-            else { // Else these are the central nodes: their node number is equal to their type
-                console.log("FILLING:" + d.index)
-                console.log(feat_type_to_color(d.index))
-                return feat_type_to_color(d.index)
-            }
-        });
-
-    simulation
-        .nodes(nodes)
-        .on("tick", tick)
-
-    simulation.force("link")
-        .links(links)
+    restart_display();
 
 }
 
@@ -1216,7 +1434,7 @@ function parsefeats(d) {
         // Remove brackets (Unless Mythic!!!)
         if(feat_array[i].indexOf("(") != -1) {
             // Unless Mythic!
-            if(feat_array[i].slice(-8) != "(Mythic)") {
+            if(feat_array[i].slice(-8) != "(Mythic)" || feat_array[i].includes("in lieu of BAB")) {
                 feat_array[i] = feat_array[i].substring(0, feat_array[i].indexOf("("))
 
                 // Remove trailing spaces (Again!)
@@ -1239,13 +1457,6 @@ function parsefeats(d) {
 
 // TOOLTIP STUFF HERE: Uses the d3-tip library extension that mimics d3-v3's tooltip functionality
 
-// TODO: Total PR (Including Feats and non-feats) function
-    // Ability Scores + Levels
-    // Skills + Levels
-    // BAB
-    // Races
-    // "Misc": Which won't be filterabler (Trait, char level, caster level, etc.
-
 // Input: Array of values to be iterated through and give colors of stuff
 function tip_return_val(data) {
 
@@ -1254,8 +1465,6 @@ function tip_return_val(data) {
     console.log(data_obj)
 
     var return_str = ("<span style ='color:red'>Name: </span>" + data_obj.name + "<br>")
-
-    var tmp_string = ""
 
     var tmp_array = [data_obj.ability_tokens,
                      data_obj.skill_tokens,
@@ -1287,6 +1496,7 @@ function tip_return_val(data) {
     return return_str;
 }
 
+// Definition of d3-tip variable, this is used for the hover display
 var node_tooltip = d3.tip()
     .attr("class", "d3-tip")
     .attr("id", "d3-tip")
