@@ -297,9 +297,10 @@ var range_text = svg.append("text")
 var search_results_text = svg.append("text")
     .attr("x", 30)
     .attr("y", 525)
+    .attr("id", "search_result_header")
     .style("fill", "Black")
     .style("font-size", "50px")
-    .text("Search Results (First 5)")
+    .text("Search Results")
 
 for (var i = 1; i < 9; i++) {
     var tmp_x = (i > num_categories/2) ? (i-4) : i
@@ -1257,6 +1258,11 @@ function modular_render_many(input_1, input_2) {
     // Cache display value if not using cache function
     if (!using_cache_flag) {
         display_cache.push({in1: input_1.slice(), in2: input_2.slice()})
+
+        // Set max cache length to 8 to avoid memory runaway
+        if (display_cache.length > 8) {
+            display_cache.splice(0, 1)
+        }
         first_click_flag = true // Indicates that the current render is cached at the top and should be ignored
     }
 
@@ -1345,6 +1351,10 @@ function filter_button_fn() {
 
 // This function clears all text fields and checkboxes in the menu
 function clear_button_fn() {
+
+    d3.select("#search_result_header").text("Search Results")
+    d3.selectAll("#search_result_strings").remove()
+
     d3.select("#feat_text_box").property("value", "")
     d3.select("#race_text_box").property("value", "")
     d3.select("#lower_bound_text_box").property("value", "")
@@ -1370,6 +1380,12 @@ function search_button_fn() {
     var race_string = d3.select("#race_text_box").node().value
     if (race_string == "") race_string = -1
 
+    var race_string_tokenized = parsefeats(race_string)
+
+    console.log("RACE STRING INPUT-------------------")
+    console.log(race_string)
+    console.log(race_string_tokenized)
+
     var lower_bound_int = Number(d3.select("#lower_bound_text_box").node().value)
     if (lower_bound_int == "") lower_bound_int = -1
     if (lower_bound_int < 0) lower_bound_int = -1
@@ -1385,11 +1401,6 @@ function search_button_fn() {
         // i.e. if only upper is given, go from 0...upper
         // and if only lower is given, go from lower ... max
 
-    console.log(lower_bound_int)
-    console.log(upper_bound_int)
-    console.log(typeof(upper_bound_int))
-    console.log(upper_bound_int < lower_bound_int)
-  
     if (upper_bound_int < lower_bound_int) {
         upper_bound_int = -1
         lower_bound_int = -1
@@ -1414,7 +1425,7 @@ function search_button_fn() {
 
     var search_structure = {
         feat_name: feat_string,
-        race: race_string,
+        race: race_string_tokenized,
         type: render_types,
         range: {lower: lower_bound_int, upper: upper_bound_int}
     } 
@@ -1431,7 +1442,18 @@ function search_button_fn() {
 
     // Display some results!
 
-    svg.selectAll("#search_result_strings").remove()
+    var tmp_str;
+
+    if (search_result.length <= 5) {
+        tmp_str = "Search Results"
+    }
+    else {
+        tmp_str = ("Search Results (First 5 of " + search_result.length + ")")
+    }
+   
+    d3.select("#search_result_header").text(tmp_str)
+
+    d3.selectAll("#search_result_strings").remove()
 
     for(var i = 0; i < ((search_result.length > 5) ? 5 : search_result.length); i++) {
 
@@ -1452,6 +1474,10 @@ function search_button_fn() {
             .style("fill", "Red")
             .style("font-size", "35px")
             .text("No feats found")
+            .transition()
+                .delay(3000)
+                .duration(5000)
+                .style("opacity", 0)
     }
 
     console.log("Resulting Values: (search structure, search results): ")
@@ -1519,6 +1545,8 @@ function search_fn(input_structure) {
         first_flag = false;
     }
 
+    var first_race_flag = true;
+
     // Check Races
     if (input_structure.race != -1) {
         console.log("CHECKING RACES >>>>>>>>>>>>>>>")
@@ -1528,36 +1556,37 @@ function search_fn(input_structure) {
             // If first flag, grab everything associated with this race
             if (first_flag) {
 
-                // iterate through all given races
+                // iterate through all input races
                 for (var i = 0; i < input_structure.race.length; i++) {
+
                     input_structure.race[i] = input_structure.race[i].toUpperCase()
 
                     // For each race, iterate through the range of feats to check against
                     for (var n = lower_bound; n < upper_bound; n++) {
 
-                        // If no prerequisite feat, simply add (If not already added)
+                        // If no prerequisite race, simply add (If not already added)
                         if (csv_data_array[n].race_tokens.length == 0) {
-                            if (!array_contains(csv_data_array[i].name, return_array)) {
-                                return_array.push(csv_data_array[i])
-                            }
+                            if (first_race_flag) return_array.push(csv_data_array[n])
                         }
                         else {
 
                             for (var m = 0; m < csv_data_array[n].race_tokens.length; m++) {
                                 tmp_val = csv_data_array[n].race_tokens[m].toUpperCase();
 
-                                if (input_structure.race.name == tmp_val) {
+                                if (input_structure.race[i] == tmp_val) {
 
+                                    tmp_array = []
                                     for (var p = 0; p < return_array; p++) tmp_array.push(return_array[p].name)
 
-                                    if (!array_contains(csv_data_array[i].name, tmp_array)) {
-                                        return_array.push(csv_data_array[i])
+                                    if (!array_contains(csv_data_array[n].name, tmp_array)) {
+                                        return_array.push(csv_data_array[n])
                                     }
                                     continue
                                 }
                             }
                         }
                     }
+                    first_race_flag = false;
                 }
             }
             else { // Not first criteria, so cycle through previously found values
@@ -1601,6 +1630,7 @@ function search_fn(input_structure) {
             return -1;
         }
         first_flag = false;
+        console.log("CHECKING RACES <<<<<<<<<<<<<<<<")
     }
 
     console.log(input_structure)
@@ -1732,6 +1762,8 @@ function restart_display() {
 
     var javascript_d3_index_error_flag = (modular_num_categories == 1) ? true : false;
 
+    nodes.forEach(function(d) {d.x = width/2, d.y = height/2 })
+
     // Create nodes themselves with hover capacity
     svg_nodes = svg.selectAll("node")
         .data(nodes)
@@ -1801,7 +1833,7 @@ function restart_display() {
     simulation.force("link")
         .links(links)
 
-    simulation.alpha(0.8).restart()
+    simulation.alpha(1.0).restart()
 
     console.log("---------------------restart_display END---------------------")
 
@@ -2037,7 +2069,7 @@ var node_tooltip = d3.tip()
 
         // If this is within the central node
         if(d.index <= num_categories) {
-            return ("<span style='color: red'>Feat Category: </span>" + feat_categories[d.index].name)
+            return ("<span style='color: #222'>Feat Category: </span>" + feat_categories[d.index].name)
         }
         // Else this is a feat node
         else {
