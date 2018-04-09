@@ -1280,14 +1280,21 @@ function filter_button_fn() {
     // If 0 results were found
     if (search_result.length == 0) return;
 
+    // Put this array to false
+    for (var i = 0; i < render_none.length; i++) render_none[i] = false;
+
+    // Set render_none fields to display proper nodes
     for (var i = 0; i < search_result.length; i++) {
-        if (feat_type_to_number(csv_data_array[featString_to_featID_map.get(search_result[i])].type)) { 
-            render_none[feat_type_to_number(csv_data_array[featString_to_featID_map.get(search_result[i])].type)] = true;
+//        if (feat_type_to_number(csv_data_array[featString_to_featID_map.get(search_result[i])].type)) { 
+//            render_none[feat_type_to_number(csv_data_array[featString_to_featID_map.get(search_result[i])].type)] = true;
+//        }
+        if (feat_type_to_number(search_result[i].type)) { // This if is an error statement
+            render_none[feat_type_to_number(search_result[i].type)] = true;
         }
     }
 
-    console.log("stuff")
-    console.log(render_none)
+    console.log("stuff-------------------------------------------------")
+    console.log(render_none.slice())
     console.log(search_result)
 
     modular_render_many(render_none, search_result)
@@ -1332,17 +1339,14 @@ function search_button_fn() {
     console.log(upper_bound_int < lower_bound_int)
   
     if (upper_bound_int < lower_bound_int) {
-        console.log("Foo123")
         upper_bound_int = -1
         lower_bound_int = -1
     }
 
     if ((lower_bound_int != -1) && (upper_bound_int == -1)) {
-        console.log("Foo2")
         upper_bound_int = csv_data_array.length
     }
     else if ((lower_bound_int == -1) && (upper_bound_int != -1)) {
-        console.log("Foo3")
         lower_bound_int = 0
     }
 
@@ -1364,7 +1368,6 @@ function search_button_fn() {
     } 
 
     if ((lower_bound_int == -1) && (upper_bound_int == -1)) {
-        console.log("Foo4")
         search_structure.range = -1
     }
 
@@ -1386,7 +1389,7 @@ function search_button_fn() {
             .attr("y", 570+i*30)
             .style("fill", "Black")
             .style("font-size", "25px")
-            .text("#" + (i+1) + ": " + search_result[i])
+            .text("#" + (i+1) + ": " + search_result[i].name)
     }
 
     if (search_result.length == 0) {
@@ -1410,7 +1413,7 @@ function search_button_fn() {
 
 // Input: input_structure {
 //     D feat_name: <string>  
-//     D race: { name:<string>, exclusive: <bool> }
+//     D race: { <string> }
 //     D type: <string> // Just one type
 //     D range: {lower: <int>, upper: <int>}
 // }
@@ -1429,7 +1432,8 @@ function search_fn(input_structure) {
     var lower_bound;
     var upper_bound;
 
-    var bounds_flag = false;
+    var first_flag = true;
+    var delete_flag = true;
 
     // Apply bounding for all future looping
     if (typeof(input_structure.range) == 'object') {
@@ -1443,7 +1447,6 @@ function search_fn(input_structure) {
 
     // Check string
     if (input_structure.feat_name != -1) {
-        bounds_flag = true;
         if (typeof(input_structure.feat_name) == 'string') {
 
             // put input feat name to upper
@@ -1453,7 +1456,7 @@ function search_fn(input_structure) {
                 tmp_val = csv_data_array[i].name.toUpperCase();
 
                 if (tmp_val.includes(input_structure.feat_name)) {
-                    return_array.push(csv_data_array[i].name)
+                    return_array.push(csv_data_array[i])
                 }
             }
         }
@@ -1461,41 +1464,80 @@ function search_fn(input_structure) {
             console.log("<search> Input Error on feat_name: " + input_structure.feat_name)
             return -1;
         }
+        first_flag = false;
     }
 
     // Check Races
     if (input_structure.race != -1) {
-        bounds_flag = true;
+        console.log("CHECKING RACES >>>>>>>>>>>>>>>")
         // Typecheck
         if (typeof(input_structure.race) == 'object') {
 
-            // Set input race name to uppercase
-            input_structure.race.name = input_structure.race.name.toUpperCase()
+            // If first flag, grab everything associated with this race
+            if (first_flag) {
 
-            for (var i = lower_bound; i < upper_bound; i++) {
-                // If no race is required for a feat, then only add if this is an inclusive search
-                if (csv_data_array[i].race_tokens.length == 0) {
-                    if (input_structure.race.exclusive == false) {
-                        // from here to the end of this search function, all values must be checked to avoid duplicates
-                        if (!array_contains(csv_data_array[i].name, return_array)) {
-                            return_array.push(csv_data_array[i].name)
+                // iterate through all given races
+                for (var i = 0; i < input_structure.race.length; i++) {
+                    input_structure.race[i] = input_structure.race[i].toUpperCase()
+
+                    // For each race, iterate through the range of feats to check against
+                    for (var n = lower_bound; n < upper_bound; n++) {
+
+                        // If no prerequisite feat, simply add (If not already added)
+                        if (csv_data_array[n].race_tokens.length == 0) {
+                            if (!array_contains(csv_data_array[i].name, return_array)) {
+                                return_array.push(csv_data_array[i])
+                            }
+                        }
+                        else {
+
+                            for (var m = 0; m < csv_data_array[n].race_tokens.length; m++) {
+                                tmp_val = csv_data_array[n].race_tokens[m].toUpperCase();
+
+                                if (input_structure.race.name == tmp_val) {
+
+                                    for (var p = 0; p < return_array; p++) tmp_array.push(return_array[p].name)
+
+                                    if (!array_contains(csv_data_array[i].name, tmp_array)) {
+                                        return_array.push(csv_data_array[i])
+                                    }
+                                    continue
+                                }
+                            }
                         }
                     }
-
-                    continue
                 }
+            }
+            else { // Not first criteria, so cycle through previously found values
+                if (return_array.length == 0) return [];
 
-                console.log("foobar")
+                // iterate through all given races
+                for (var i = 0; i < input_structure.race.length; i++) {
+                    input_structure.race[i] = input_structure.race[i].toUpperCase()
 
-                // Test if the race tokens themselves match the input race token
-                for (var n = 0; n < csv_data_array[i].race_tokens.length; n++) {
-                    tmp_val = csv_data_array[i].race_tokens[n].toUpperCase();
+                    // For each race, iterate through the previously found feats
+                    for (var n = 0; n < return_array.length; n++) {
 
-                    if (input_structure.race.name == tmp_val) {
-                        if (!array_contains(csv_data_array[i].name, return_array)) {
-                            return_array.push(csv_data_array[i].name)
+                        // If no prerequisite races, keep this token
+                        // If prerequisite races, check if it is one of the given races
+                        if (csv_data_array[n].race_tokens.length != 0) {
+
+                            delete_flag = true;
+
+                            // iterate through all race tokens on this feat
+                            for (var m = 0; m < return_array[n].race_tokens.length; m++) {
+                                tmp_val = return_array[n].race_tokens[m].toUpperCase();
+
+                                // If one matches, lower the delete flag
+                                if (input_structure.race.name == tmp_val) {
+                                    delete_flag = false;
+                                    continue
+                                }
+                            }
+
+                            // if flag is still set, delete the item!
+                            if (delete_flag) return_array.splice(n, 1)
                         }
-                        continue
                     }
                 }
             }
@@ -1506,6 +1548,7 @@ function search_fn(input_structure) {
             console.log(input_structure.race)
             return -1;
         }
+        first_flag = false;
     }
 
     console.log(input_structure)
@@ -1513,25 +1556,49 @@ function search_fn(input_structure) {
     // Check type
     if (input_structure.type != -1) {
         if (typeof(input_structure.type) == 'object') {
-            bounds_flag = true;
 
-            for (var i = 0; i < input_structure.type.length; i++) {
+            // If first flag, get all feats associated with the given types
+            if (first_flag) {
+                for (var i = 0; i < input_structure.type.length; i++) {
 
-                if (input_structure.type[i]) {
+                    // If this feat is active, add all feats of that type in the range
+                    if (input_structure.type[i]) {
+                        // i is the feat number at this point
 
-                    // i is the feat number at this point
-
-                    tmp_val = feat_type_to_number(input_structure.type[i])
-
-                    for (var n = lower_bound; n < upper_bound; n++) {
-                        if (feat_type_to_number(csv_data_array[n].type) == i){
-                            if (!array_contains(csv_data_array[n].name, return_array)) {
-                                    return_array.push(csv_data_array[n].name)
+                        // Iterate through all feats in the range
+                        for (var n = lower_bound; n < upper_bound; n++) {
+                            // If types match, add the item!
+                            if (feat_type_to_number(csv_data_array[n].type) == i){
+                                return_array.push(csv_data_array[n])
                             }
                         }
                     }
+                    else continue
                 }
-                else continue
+            }
+            else { // Else, check feats already in return_array
+                console.log("GETTING HEREEEEEEEEEEEEEEEE")
+                console.log(input_structure.type)
+                console.log(return_array.slice())
+
+                var tmp_length = return_array.length
+                var tmp_i;
+
+                // Iterate through all the values in the return array
+                for (var tmp_i = 0; tmp_i < tmp_length; tmp_i++) {
+
+                    tmp_val = feat_type_to_number(return_array[tmp_i].type)
+
+                    console.log("tmp_i: " + tmp_i + " || tmp_val: " + tmp_val)
+
+                    // If input for that type is set high, then don't delete
+                    if (input_structure.type[tmp_val] != true) {
+                        console.log("DELETING DUE TO TYPE")
+                        return_array.splice(tmp_i, 1)
+                        tmp_i--;
+                        tmp_length--;
+                    }
+                }
             }
         }
         else {
@@ -1540,21 +1607,22 @@ function search_fn(input_structure) {
             console.log(input_structure.type)
             return -1;
         }
+        first_flag = false;
     }
 
-    console.log(bounds_flag)
+    console.log(first_flag)
     console.log(input_structure.range)
 
     // If range was provided alone, simply return everything in that range
     if (typeof(input_structure.range) == 'object') {
         console.log("foobar")
-        if (bounds_flag == false ) {
+        if (first_flag == true ) {
             console.log("foobar")
             console.log(lower_bound)
             console.log(upper_bound)
             for (var i = lower_bound; i < upper_bound; i++) {
                 console.log("foobar")
-                return_array.push(csv_data_array[i].name)
+                return_array.push(csv_data_array[i])
             }
         }
     }
