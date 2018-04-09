@@ -3,7 +3,7 @@
 // <<<<<<<<<<<<<<<<<<< SECTION BREAK: Globals >>>>>>>>>>>>>>>>>>>>>
 
 var width = 3500;
-var height = 3500;
+var height = 2750;
 
 var link_strength = 0.6
 var link_distance_metric = 75
@@ -28,7 +28,7 @@ var feat_categories = [ { name: "Root",
                           render: true },
                         { name: "Monster",
                           render: true },
-                        { name: "Item Creation",
+                        { name: "Items",
                           render: true },
                         { name: "Other",
                           render: true } ]
@@ -63,32 +63,255 @@ var featID_to_stringID_map = new Map();
 var nodeID_to_featID_map = new Map();
 var MAIN_featID_to_NodeID_map = new Map();  // Will list the one FINAL node associated with a given feat
 
-/*
-var menu_width = 300
-var menu_height = 500
+// SVG & MENU STUFF
 
-var svg_menu = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height)
-*/
+var tau = 2*Math.PI
+
+var myArc_outer = d3.arc()
+    .innerRadius(20)
+    .outerRadius(35)
+    .startAngle(0.5*tau)
+    .endAngle(-0.25*tau);
+
+var myArc_inner = d3.arc()
+    .innerRadius(0)
+    .outerRadius(20)
+    .startAngle(0.5*tau)
+    .endAngle(-0.25*tau);
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
 
-// Read in data and work with it
-// NOTE: Will have to convert data
+// Function to return line coordinates to draw
+var linefunction = d3.line()
+    .x(function(d) { return d.x; })
+    .y(function(d) { return d.y; });
+
+var rect_width = 600
+var rect_height = 800
+var rect_offset = 10
+
+var box = svg.append("rect")
+    .attr("x", rect_offset)
+    .attr("y", rect_offset)
+    .attr("class", "menu")
+    .attr("width", rect_width)
+    .attr("height", rect_height)
+    .style("opacity", 0.5)
+    .attr("fill", "#4a4a4f")
+
+var border_data = [{ "x": rect_offset, "y": rect_offset }, { "x": rect_offset + rect_width, "y": rect_offset},
+                    { "x": rect_width + rect_offset, "y": rect_height + rect_offset }, { "x": rect_offset, "y": rect_height + rect_offset},
+                    { "x": rect_offset, "y": rect_offset - 1} ]
+
+var border = svg.append("path")
+    .attr("d", linefunction(border_data))
+    .attr("stroke-width", 2)
+    .attr("stroke", "black")
+    .attr("fill", "none");
+
+var tri_start = {x: 31, y: 60}
+
+var triangle_data = [{"x": tri_start.x - 12, "y": tri_start.y }, {"x": tri_start.x + 12, "y": tri_start.y },
+                     {"x": tri_start.x, "y": tri_start.y + 15},  {"x": tri_start.x - 10, "y": tri_start.y }]
+
+var back_button_1 = svg.append("path")
+    .attr("d", myArc_outer)
+    .attr("fill", "black")
+    .style("cursor", "pointer")
+    .attr("transform", "translate(60, 60)")
+    .on("click", function() {modular_render_many(render_all, [])});
+
+var back_button_2 = svg.append("path")
+    .attr("d", linefunction(triangle_data))
+    .attr("stroke-width", 1)
+    .attr("stroke", "none")
+    .attr("fill", "black")
+    .on("click", function() {modular_render_many(render_all, [])});
+
+var back_button_3 = svg.append("path")
+    .attr("d", myArc_inner)
+    .attr("fill", "#4a4a4f")
+    .style("opacity", 0)
+    .style("cursor", "pointer")
+    .attr("transform", "translate(60, 60)")
+    .on("click", function() {modular_render_many(render_all, [])});
+
+var filter_button = svg.append("rect")
+    .attr("x", 445)
+    .attr("y", 730)
+    .attr("width", 150)
+    .attr("height", 65)
+    .style("opacity", 0.5)
+    .style("cursor", "pointer")
+    .attr("fill", "#4a4a4f")
+    .on("click", function () { filter_button_fn() })
+
+var filter_button_text = svg.append("text")
+    .attr("x", 475)
+    .attr("y", 777)
+    .style("fill", "Black")
+    .style("font-size", "40px")
+    .style("cursor", "pointer")
+    .text("filter")
+    .on("click", function () { filter_button_fn() })
+
+var search_button = svg.append("rect")
+    .attr("x", 25)
+    .attr("y", 730)
+    .attr("width", 150)
+    .attr("height", 65)
+    .style("opacity", 0.5)
+    .style("cursor", "pointer")
+    .attr("fill", "#4a4a4f")
+    .on("click", function () { search_button_fn() })
+
+var search_button_text = svg.append("text")
+    .attr("x", 55)
+    .attr("y", 777)
+    .style("fill", "Black")
+    .style("font-size", "40px")
+    .style("cursor", "pointer")
+    .text("Search")
+    .on("click", function () { search_button_fn() })
+
+console.log("BOX")
+console.log(box)
+
+var text = svg.append("text")
+    .attr("x", 215)
+    .attr("y", 107)
+    .style("fill", "brown")
+    .style("font-size", "100px")
+    .text("menu")
+
+var search_options_text = svg.append("text")
+    .attr("x", 30)
+    .attr("y", 180)
+    .style("fill", "Black")
+    .style("font-size", "50px")
+    .text("Search Options")
+
+var feat_text = svg.append("text")
+    .attr("x", 30)
+    .attr("y", 238)
+    .style("fill", "Black")
+    .style("font-size", "36px")
+    .text("Feat (String): ")
+
+var feat_text_box = svg.append("foreignObject")
+    .attr("x", 240)
+    .attr("y", 200)
+    .attr("width", 100)
+    .attr("height", 200)
+    .append("xhtml:body").append("xhtml:input")
+        .attr("id", "feat_text_box")
+        .attr("size", 20)
+        .attr("type","input")
+        .attr("placeholder", "Feat Search String")
+        .style("font-size", "25px")
+
+var race_text = svg.append("text")
+    .attr("x", 30)
+    .attr("y", 290)
+    .style("fill", "Black")
+    .style("font-size", "36px")
+    .text("Race (String): ")
+
+var race_text_box = svg.append("foreignObject")
+    .attr("x", 240)
+    .attr("y", 250)
+    .attr("width", 100)
+    .attr("height", 200)
+    .append("xhtml:body").append("xhtml:input")
+        .attr("id", "race_text_box")
+        .attr("size", 20)
+        .attr("type","input")
+        .attr("placeholder", "Race Search String")
+        .style("font-size", "25px")
+
+var range_text = svg.append("text")
+    .attr("x", 30)
+    .attr("y", 342)
+    .style("fill", "Black")
+    .style("font-size", "36px")
+    .text("ID Range (Int, Int): ")
+
+var lower_bound_text_box = svg.append("foreignObject")
+    .attr("x", 240)
+    .attr("y", 300)
+    .attr("width", 100)
+    .attr("height", 200)
+    .append("xhtml:body").append("xhtml:input")
+        .attr("id", "lower_bound_text_box")
+        .attr("size", 9)
+        .attr("type","input")
+        .attr("placeholder", "Lower Bound")
+        .style("font-size", "25px")
+
+var upper_bound_text_box = svg.append("foreignObject")
+    .attr("x", 405)
+    .attr("y", 300)
+    .attr("width", 100)
+    .attr("height", 200)
+    .append("xhtml:body").append("xhtml:input")
+        .attr("id", "upper_bound_text_box")
+        .attr("size", 9)
+        .attr("type","input")
+        .attr("placeholder", "Upper Bound")
+        .style("font-size", "25px")
+
+var range_text = svg.append("text")
+    .attr("x", 30)
+    .attr("y", 394)
+    .style("fill", "Black")
+    .style("font-size", "36px")
+    .text("Feat Types: ")
+
+var search_results_text = svg.append("text")
+    .attr("x", 30)
+    .attr("y", 525)
+    .style("fill", "Black")
+    .style("font-size", "50px")
+    .text("Search Results (First 5)")
+
+for (var i = 1; i < 9; i++) {
+    var tmp_x = (i > num_categories/2) ? (i-4) : i
+    var tmp_y = (i > num_categories/2) ? 1 : 0
+
+    svg.append("foreignObject")
+        .attr("class", "cb")
+        .attr("x", 130+tmp_x*90).attr("y", (350 + tmp_y*50))
+        .attr("width", 100).attr("height", 200)
+        .append("xhtml:body").append("xhtml:input")
+            .attr("id", ("cb" + i))
+            .attr("value", true)
+            .attr("size", 9).attr("id", ("cb" + i))
+            .attr("type","checkbox")
+
+    svg.append("text")
+        .attr("x", 120 + tmp_x*90 + ((i >= 7) ? 8 : 0))
+        .attr("y", 410 + tmp_y*50)
+        .style("fill", "rgb(41, 73, 98)")
+        .style("font-size", "25px")
+        .text(feat_categories[i].name)
+
+}
+
+// Read CSV file to create nodes
 d3.csv("/Data/pathfinder_feats.csv", function(data) {
+    // Store data for future usage
     csv_data_array = data;
 
-    var pre_req_cnt = 0;
-
+    // Do *some* preprocessing of the data
     format_csv_data_array()
 
+    // Launch the default version of the visualization
     format_baseline()
 
+    // Enable tooltips
     svg.call(node_tooltip)
-
 });
 
 
@@ -307,7 +530,8 @@ function feat_type_to_color(type) {
 }
 
 function feat_type_to_number(type) {
-    var upper_type = type.toUpperCase();
+
+    var upper_type = (typeof(type) == 'string') ? type.toUpperCase() : undefined
     switch (upper_type) {
         case 'ROOT':
             return 0
@@ -347,7 +571,7 @@ function feat_type_to_number(type) {
 // Input: Array of categories (1 or 0 to indicate rendering)
 function initialize_central_nodes() {
 
-    var dev_mode_tmp = true;
+    var dev_mode_tmp = false;
 
     if (dev_mode_tmp) console.log("---------------------------initialize_central_nodes---------------------------")
 
@@ -1005,26 +1229,16 @@ function modular_render_many(input_1, input_2) {
         return;
     }
 
-    console.log("FOO 1")
-
-    console.log("FOO 2")
-
     // Clear nodes and links arrays
     nodes = []
     links = []
-
-    console.log("FOO 3")
 
     // Deal with input_1 by setting up central node
     for (var i = 1; i < feat_categories.length; i++) {
         feat_categories[i].render = input_1[i]
     }
 
-    console.log("FOO 4")
-
     initialize_central_nodes()
-
-    console.log("FOO 5")
 
     // Deal with input_2 by creating dependency trees
 
@@ -1052,22 +1266,158 @@ function modular_render_many(input_1, input_2) {
 
     }
 
-    console.log("FOO 6")
-
     console.log("-------------------------modular_render_many END-------------------------")
+
+} 
+
+// This function performs a search_button_fn() and then also graphs it!
+function filter_button_fn() {
+    var search_result = search_button_fn();
+
+    // If an error occured in the search function
+    if (search_result == -1) return -1;
+
+    // If 0 results were found
+    if (search_result.length == 0) return;
+
+    for (var i = 0; i < search_result.length; i++) {
+        if (feat_type_to_number(csv_data_array[featString_to_featID_map.get(search_result[i])].type)) { 
+            render_none[feat_type_to_number(csv_data_array[featString_to_featID_map.get(search_result[i])].type)] = true;
+        }
+    }
+
+    console.log("stuff")
+    console.log(render_none)
+    console.log(search_result)
+
+    modular_render_many(render_none, search_result)
+
+    // Put this value back to all false
+    for (var i = 0; i < render_none.length; i++) render_none[i] = false;
+}
+
+// This function reads all the input data from the menu and then performs a search (search_fn)
+function search_button_fn() {
+    console.log("foobar")
+
+    var render_types = [false,0,0,0,0,0,0,0,0]
+
+    // Grab all the data from the inputs
+
+    var feat_string = d3.select("#feat_text_box").node().value
+    if (feat_string == "") feat_string = -1
+
+    var race_string = d3.select("#race_text_box").node().value
+    if (race_string == "") race_string = -1
+
+    var lower_bound_int = Number(d3.select("#lower_bound_text_box").node().value)
+    if (lower_bound_int == "") lower_bound_int = -1
+    if (lower_bound_int < 0) lower_bound_int = -1
+    if (lower_bound_int > csv_data_array.length ) lower_bound_int = -1
+
+
+    var upper_bound_int = Number(d3.select("#upper_bound_text_box").node().value)
+    if (upper_bound_int == "") upper_bound_int = -1
+    if (upper_bound_int < 0) upper_bound_int = -1
+    if (upper_bound_int > csv_data_array.length ) upper_bound_int = -1
+
+
+    // If only one bound is given, assume they want the rest of the range
+        // i.e. if only upper is given, go from 0...upper
+        // and if only lower is given, go from lower ... max
+
+    console.log(lower_bound_int)
+    console.log(upper_bound_int)
+    console.log(typeof(upper_bound_int))
+    console.log(upper_bound_int < lower_bound_int)
+  
+    if (upper_bound_int < lower_bound_int) {
+        console.log("Foo123")
+        upper_bound_int = -1
+        lower_bound_int = -1
+    }
+
+    if ((lower_bound_int != -1) && (upper_bound_int == -1)) {
+        console.log("Foo2")
+        upper_bound_int = csv_data_array.length
+    }
+    else if ((lower_bound_int == -1) && (upper_bound_int != -1)) {
+        console.log("Foo3")
+        lower_bound_int = 0
+    }
+
+    for (var i = 1; i < num_categories+1; i++) {
+        render_types[i] = feat_categories[i].render = d3.select("#cb" + i).property("checked")
+    }
+
+    true_counter = 0;
+
+    for (var i = 0; i < render_types.length; i++) if (render_types[i]) true_counter++;
+
+    // Perform search itself:
+
+    var search_structure = {
+        feat_name: feat_string,
+        race: race_string,
+        type: render_types,
+        range: {lower: lower_bound_int, upper: upper_bound_int}
+    } 
+
+    if ((lower_bound_int == -1) && (upper_bound_int == -1)) {
+        console.log("Foo4")
+        search_structure.range = -1
+    }
+
+    if (true_counter == 0) {
+        search_structure.type = -1
+    }
+
+    var search_result = search_fn(search_structure)
+
+    // Display some results!
+
+    svg.selectAll("#search_result_strings").remove()
+
+    for(var i = 0; i < ((search_result.length > 5) ? 5 : search_result.length); i++) {
+
+        svg.append("text")
+            .attr("id", "search_result_strings")
+            .attr("x", 30)
+            .attr("y", 570+i*30)
+            .style("fill", "Black")
+            .style("font-size", "25px")
+            .text("#" + (i+1) + ": " + search_result[i])
+    }
+
+    if (search_result.length == 0) {
+        svg.append("text")
+            .attr("id", "search_result_strings")
+            .attr("x", 30)
+            .attr("y", 570+i*30)
+            .style("fill", "Red")
+            .style("font-size", "35px")
+            .text("No feats found")
+    }
+
+    console.log("Resulting Values: (search structure, search results): ")
+    console.log(search_structure)
+    console.log(search_result)
+
+    // Return array
+    return search_result;
 
 }
 
 // Input: input_structure {
 //     D feat_name: <string>  
 //     D race: { name:<string>, exclusive: <bool> }
-//       type: <string> // Just one type
+//     D type: <string> // Just one type
 //     D range: {lower: <int>, upper: <int>}
 // }
     // Note: for any attribute that is ignored, "-1" will be entered
 // Output: Array of feat IDs that match the search criteria
 
-function  search_fn(input_structure) {
+function search_fn(input_structure) {
 
     console.log("INPUT STRUCTURE")
     console.log(input_structure)
@@ -1158,26 +1508,30 @@ function  search_fn(input_structure) {
         }
     }
 
+    console.log(input_structure)
+
     // Check type
     if (input_structure.type != -1) {
-        if (typeof(input_structure.type) == 'string') {
+        if (typeof(input_structure.type) == 'object') {
             bounds_flag = true;
 
-            tmp_val = feat_type_to_number(input_structure.type)
+            for (var i = 0; i < input_structure.type.length; i++) {
 
-            if (tmp_val == -1) {
-                console.log("<search> Input Error on type: >>" + typeof(input_structure.type) + "<<")
-                console.log(typeof(input_structure.type))
-                console.log(input_structure.type)
-                return -1
-            }
-            
-            for (var i = lower_bound; i < upper_bound; i++) {
-                if (feat_type_to_number(csv_data_array[i].type) == tmp_val){
-                    if (!array_contains(csv_data_array[i].name, return_array)) {
-                            return_array.push(csv_data_array[i].name)
+                if (input_structure.type[i]) {
+
+                    // i is the feat number at this point
+
+                    tmp_val = feat_type_to_number(input_structure.type[i])
+
+                    for (var n = lower_bound; n < upper_bound; n++) {
+                        if (feat_type_to_number(csv_data_array[n].type) == i){
+                            if (!array_contains(csv_data_array[n].name, return_array)) {
+                                    return_array.push(csv_data_array[n].name)
+                            }
                         }
+                    }
                 }
+                else continue
             }
         }
         else {
@@ -1210,7 +1564,11 @@ function  search_fn(input_structure) {
 
 function restart_display() {
 
-    svg.selectAll("*").transition().duration(1000).style("opacity", 0).remove()
+    var fade_time = 1500 // in ms
+
+    svg.selectAll("line").transition().duration(fade_time).style("opacity", 0).remove()
+    svg.selectAll("node").transition().duration(fade_time).style("opacity", 0).remove()
+    svg.selectAll("circle").transition().duration(fade_time).style("opacity", 0).remove()
 
     svg_links = svg.selectAll("link")
         .data(links)
@@ -1249,6 +1607,21 @@ function restart_display() {
                 render_none[d.index] = false
             }
             else { // Otherwise, render individual node that was clicked on
+
+/*
+                var search_structure = {
+                    feat_name: -1,
+                    race: -1,
+                    type: -1,
+                    range: -1
+                } 
+
+                var test_val = search_fn(search_structure)
+
+                console.log("SEARCHING HERE")
+                console.log(test_val)
+*/
+
                 modular_render_one(nodeID_to_featID_map.get(d.index))
             }
         })
@@ -1259,6 +1632,7 @@ function restart_display() {
         )
         .append("circle")
         .attr("r", function(d) { return d.r })
+        .attr("class", "circle")
         .style("fill", function(d) {
             if (!javascript_d3_index_error_flag) { 
                 javascript_d3_index_error_flag = true;
