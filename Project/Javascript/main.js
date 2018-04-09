@@ -98,7 +98,7 @@ var box = svg.append("rect")
     .attr("class", "menu")
     .attr("width", rect_width)
     .attr("height", rect_height)
-    .style("opacity", 0.5)
+    .style("opacity", 0.25)
     .attr("fill", "#4a4a4f")
 
 var border_data = [{ "x": rect_offset, "y": rect_offset }, { "x": rect_offset + rect_width, "y": rect_offset},
@@ -121,14 +121,14 @@ var back_button_1 = svg.append("path")
     .attr("fill", "black")
     .style("cursor", "pointer")
     .attr("transform", "translate(60, 60)")
-    .on("click", function() {modular_render_many(render_all, [])});
+    .on("click", function() { cache_display_fn() });
 
 var back_button_2 = svg.append("path")
     .attr("d", linefunction(triangle_data))
     .attr("stroke-width", 1)
     .attr("stroke", "none")
     .attr("fill", "black")
-    .on("click", function() {modular_render_many(render_all, [])});
+    .on("click", function() { cache_display_fn() });
 
 var back_button_3 = svg.append("path")
     .attr("d", myArc_inner)
@@ -136,7 +136,28 @@ var back_button_3 = svg.append("path")
     .style("opacity", 0)
     .style("cursor", "pointer")
     .attr("transform", "translate(60, 60)")
-    .on("click", function() {modular_render_many(render_all, [])});
+    .on("click", function() { cache_display_fn() });
+
+var clear_button = svg.append("rect")
+    .attr("x", 445)
+    .attr("y", 20)
+    .attr("width", 150)
+    .attr("height", 65)
+    .style("opacity", 0.5)
+    .style("cursor", "pointer")
+    .attr("fill", "#4a4a4f")
+    .attr("stroke-width", 5)
+    .attr("stroke", "black")
+    .on("click", function () { clear_button_fn() })
+
+var clear_button_text = svg.append("text")
+    .attr("x", 477)
+    .attr("y", 70)
+    .style("fill", "Black")
+    .style("font-size", "40px")
+    .style("cursor", "pointer")
+    .text("clear")
+    .on("click", function () { clear_button_fn() })
 
 var filter_button = svg.append("rect")
     .attr("x", 445)
@@ -146,6 +167,8 @@ var filter_button = svg.append("rect")
     .style("opacity", 0.5)
     .style("cursor", "pointer")
     .attr("fill", "#4a4a4f")
+    .attr("stroke-width", 5)
+    .attr("stroke", "black")
     .on("click", function () { filter_button_fn() })
 
 var filter_button_text = svg.append("text")
@@ -165,6 +188,8 @@ var search_button = svg.append("rect")
     .style("opacity", 0.5)
     .style("cursor", "pointer")
     .attr("fill", "#4a4a4f")
+    .attr("stroke-width", 5)
+    .attr("stroke", "black")
     .on("click", function () { search_button_fn() })
 
 var search_button_text = svg.append("text")
@@ -207,7 +232,7 @@ var feat_text_box = svg.append("foreignObject")
     .attr("height", 200)
     .append("xhtml:body").append("xhtml:input")
         .attr("id", "feat_text_box")
-        .attr("size", 20)
+        .attr("size", 18)
         .attr("type","input")
         .attr("placeholder", "Feat Search String")
         .style("font-size", "25px")
@@ -226,7 +251,7 @@ var race_text_box = svg.append("foreignObject")
     .attr("height", 200)
     .append("xhtml:body").append("xhtml:input")
         .attr("id", "race_text_box")
-        .attr("size", 20)
+        .attr("size", 18)
         .attr("type","input")
         .attr("placeholder", "Race Search String")
         .style("font-size", "25px")
@@ -245,19 +270,19 @@ var lower_bound_text_box = svg.append("foreignObject")
     .attr("height", 200)
     .append("xhtml:body").append("xhtml:input")
         .attr("id", "lower_bound_text_box")
-        .attr("size", 9)
+        .attr("size", 6)
         .attr("type","input")
         .attr("placeholder", "Lower Bound")
         .style("font-size", "25px")
 
 var upper_bound_text_box = svg.append("foreignObject")
-    .attr("x", 405)
+    .attr("x", 415)
     .attr("y", 300)
     .attr("width", 100)
     .attr("height", 200)
     .append("xhtml:body").append("xhtml:input")
         .attr("id", "upper_bound_text_box")
-        .attr("size", 9)
+        .attr("size", 6)
         .attr("type","input")
         .attr("placeholder", "Upper Bound")
         .style("font-size", "25px")
@@ -1229,9 +1254,19 @@ function modular_render_many(input_1, input_2) {
         return;
     }
 
+    // Cache display value if not using cache function
+    if (!using_cache_flag) {
+        display_cache.push({in1: input_1.slice(), in2: input_2.slice()})
+        first_click_flag = true // Indicates that the current render is cached at the top and should be ignored
+    }
+
     // Clear nodes and links arrays
     nodes = []
     links = []
+
+    console.log("INPUTS HERE")
+    console.log(input_1.slice())
+    console.log(input_2.slice())
 
     // Deal with input_1 by setting up central node
     for (var i = 1; i < feat_categories.length; i++) {
@@ -1259,12 +1294,16 @@ function modular_render_many(input_1, input_2) {
 
     if (simulation != undefined) {
 
+        console.log("NODES AND LINKS BEFORE RESTART")
         console.log(nodes)
         console.log(links)
 
         restart_display();
 
     }
+
+    console.log("display cache")
+    console.log(display_cache)
 
     console.log("-------------------------modular_render_many END-------------------------")
 
@@ -1303,6 +1342,20 @@ function filter_button_fn() {
     for (var i = 0; i < render_none.length; i++) render_none[i] = false;
 }
 
+
+// This function clears all text fields and checkboxes in the menu
+function clear_button_fn() {
+    d3.select("#feat_text_box").property("value", "")
+    d3.select("#race_text_box").property("value", "")
+    d3.select("#lower_bound_text_box").property("value", "")
+    d3.select("#upper_bound_text_box").property("value", "")
+
+    for (var i = 0; i < num_categories; i++) {
+        d3.select("#cb" + i).property("checked", false)
+    }
+
+}
+
 // This function reads all the input data from the menu and then performs a search (search_fn)
 function search_button_fn() {
     console.log("foobar")
@@ -1321,7 +1374,6 @@ function search_button_fn() {
     if (lower_bound_int == "") lower_bound_int = -1
     if (lower_bound_int < 0) lower_bound_int = -1
     if (lower_bound_int > csv_data_array.length ) lower_bound_int = -1
-
 
     var upper_bound_int = Number(d3.select("#upper_bound_text_box").node().value)
     if (upper_bound_int == "") upper_bound_int = -1
@@ -1630,7 +1682,32 @@ function search_fn(input_structure) {
     return return_array
 }
 
+var display_cache = []
+var first_display_flag = false;
+var using_cache_flag = false;
+
+function cache_display_fn(render_val) {
+    if (display_cache.length == 1) return;
+
+    if (first_click_flag) {
+        display_cache.pop()
+        first_click_flag = false
+    }
+
+    // Get values for previous display
+    var render_val = display_cache.pop()
+
+    console.log("RENDER_VAL")
+    console.log(render_val)
+
+    using_cache_flag = true;
+    modular_render_many(render_val.in1, render_val.in2)
+    using_cache_flag = false;
+}
+
 function restart_display() {
+
+    console.log("-----------------------restart_display-----------------------")
 
     var fade_time = 1500 // in ms
 
@@ -1725,6 +1802,8 @@ function restart_display() {
         .links(links)
 
     simulation.alpha(0.8).restart()
+
+    console.log("---------------------restart_display END---------------------")
 
 }
 
