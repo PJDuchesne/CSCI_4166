@@ -42,6 +42,7 @@ Menu:
 					 values assigned to the dataset when it was read it.
 		>> Feat Types: Tick any number of these boxes to filter by those feat types. If none are ticked, the type is
 						not considered at all in the search.
+            >> NOTE: The feat category words themselves can also be used to toggle the corresponding textbox
 
 	>> Filter Button: Performs a search and render using the entered search options. This will update the nodes and links
 					  in the simulation to show the newly found data. If no feats are found, the display will not update.
