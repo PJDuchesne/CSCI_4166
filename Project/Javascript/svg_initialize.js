@@ -248,6 +248,21 @@ function svg_initialize() {
             .style("fill", "rgb(41, 73, 98)")
             .style("font-size", "25px")
             .text(feat_categories[i].name)
+            .style("cursor", "pointer")
+            .on("click", function() {
+
+                // Toggle associated checkbox
+                var tmp_text = d3.select(this)._groups[0][0].textContent
+                if (tmp_text == "Items") tmp_text = "ITEM CREATION"
+                var tmp = feat_type_to_number(tmp_text)
+
+                if (d3.select("#cb" + tmp).property("checked")) {
+                    d3.select("#cb" + tmp).property("checked", false)
+                }
+                else {
+                    d3.select("#cb" + tmp).property("checked", true)
+                }
+            })
     }
 
     // Definition of d3-tip variable, this is used for the hover display
@@ -413,7 +428,7 @@ function clear_button_fn() {
     d3.select("#upper_bound_text_box").property("value", "")
 
     for (var i = 1; i < num_categories+1; i++) {
-        d3.select("#cb" + i).property("checked", false)
+        tmp = d3.select("#cb" + i).property("checked", false)
     }
 
 }

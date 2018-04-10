@@ -16,7 +16,7 @@ __/\\\\\\\\\\\\\_____/\\\\\\\\\\\__/\\\\\\\\\\\\____
 */
 
 // Read CSV file and start everything up
-d3.csv("/Data/pathfinder_feats.csv", function(data) {
+d3.csv("Data/pathfinder_feats.csv", function(data) {
     // Store data for future usage
     csv_data_array = data;
 
