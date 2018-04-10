@@ -420,9 +420,6 @@ function clear_button_fn() {
 
 }
 
-
-// This function reads all the input data from the menu and then performs a search (search_fn)
-
 /*
     Function Name: search_button_fn
     Description: Polls the user input fields and makes performs a search (search_fn) with
@@ -430,7 +427,10 @@ function clear_button_fn() {
                  results are printed directly onto the menu.
 */
 function search_button_fn() {
-    console.log("foobar")
+
+    var tmp_dev_mode = false;
+
+    if (tmp_dev_mode) console.log("------------------------------search_button_fn------------------------------")
 
     var render_types = [false,0,0,0,0,0,0,0,0]
 
@@ -444,9 +444,11 @@ function search_button_fn() {
 
     var race_string_tokenized = parsefeats(race_string)
 
-    console.log("RACE STRING INPUT-------------------")
-    console.log(race_string)
-    console.log(race_string_tokenized)
+    if (tmp_dev_mode) {
+        console.log("RACE STRING INPUT-------------------")
+        console.log(race_string)
+        console.log(race_string_tokenized)
+    }
 
     var lower_bound_int = Number(d3.select("#lower_bound_text_box").node().value)
     if (lower_bound_int == "") lower_bound_int = -1
@@ -542,9 +544,15 @@ function search_button_fn() {
                 .style("opacity", 0)
     }
 
-    console.log("Resulting Values: (search structure, search results): ")
-    console.log(search_structure)
-    console.log(search_result)
+    if (tmp_dev_mode) {
+
+        console.log("Resulting Values: (search structure, search results): ")
+        console.log(search_structure)
+        console.log(search_result)
+
+        console.log("------------------------------search_button_fn------------------------------")
+    }
+
 
     // Return array
     return search_result;
@@ -771,7 +779,7 @@ function search_fn(input_structure) {
             console.log("foobar")
             console.log(lower_bound)
             console.log(upper_bound)
-            for (var i = lower_bound; i < upper_bound; i++) {
+            for (var i = lower_bound; i <= upper_bound; i++) {
                 console.log("foobar")
                 return_array.push(csv_data_array[i])
             }
