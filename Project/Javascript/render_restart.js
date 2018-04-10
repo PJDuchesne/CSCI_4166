@@ -205,9 +205,6 @@ function restart_display() {
                 render_none[d.index] = false
             }
             else { // Otherwise, render individual node that was clicked on
-
-
-
                 modular_render_one(nodeID_to_featID_map.get(d.index))
             }
         })

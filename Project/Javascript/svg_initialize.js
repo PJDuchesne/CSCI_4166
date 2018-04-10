@@ -69,7 +69,7 @@ function svg_initialize() {
 
     var clear_button = svg.append("rect")
         .attr("x", 445)
-        .attr("y", 20)
+        .attr("y", 23)
         .attr("width", 150)
         .attr("height", 65)
         .style("opacity", 0.5)
@@ -233,7 +233,7 @@ function svg_initialize() {
         var tmp_y = (i > num_categories/2) ? 1 : 0
 
         svg.append("foreignObject")
-            .attr("class", "cb")
+            .attr("class", "myCheckbox")
             .attr("x", 130+tmp_x*90).attr("y", (350 + tmp_y*50))
             .attr("width", 100).attr("height", 200)
             .append("xhtml:body").append("xhtml:input")
@@ -248,7 +248,6 @@ function svg_initialize() {
             .style("fill", "rgb(41, 73, 98)")
             .style("font-size", "25px")
             .text(feat_categories[i].name)
-
     }
 
     // Definition of d3-tip variable, this is used for the hover display
@@ -341,7 +340,6 @@ function tip_return_val(data) {
     Note: This cache has a maximum depth of 8 in order to save on memory
 */
 function cache_display_fn() {
-
     if (display_cache.length == 0) return;
 
     if (first_click_flag) {
@@ -414,7 +412,7 @@ function clear_button_fn() {
     d3.select("#lower_bound_text_box").property("value", "")
     d3.select("#upper_bound_text_box").property("value", "")
 
-    for (var i = 0; i < num_categories; i++) {
+    for (var i = 1; i < num_categories+1; i++) {
         d3.select("#cb" + i).property("checked", false)
     }
 
