@@ -1,13 +1,15 @@
 README.txt
 
-> To run this visualization, a simple http server must be run.
-> The directions are as follows:
+> Note: To run this visualization, a simple http server must be run to serve the CSV data file
+
+>> LAUNCH GUIDE <<
 
 1) cd <your_directories>/Project/		// Go to project folder
 2) python -m SimpleHTTPServer 8000		// Start Python server
 3) http://localhost:8000/ 				// Go to server on any browser
+4) Enter "Project.html"                 // Launch Project
 
->> VISUALIZATION GUIDE <<
+>> VISUALIZATION USER INTERFACE GUIDE <<
 
 Overview: This visualization displays nodes and links between pathfinder's
 	many, many feats. In the center of the initial visualization, there is
@@ -48,3 +50,4 @@ Menu:
 					  in the simulation to show the newly found data. If no feats are found, the display will not update.
 
 	>> Cache Button (Circular Arrow in Upper Left): Displays the previously shown list of feats, with a maximum depth of 8 stored datasets
+
